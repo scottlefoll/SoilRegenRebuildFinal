@@ -1,32 +1,21 @@
 from django.urls import include, path
 from django.views.generic import TemplateView
-from .views import SignUpView
+from .views import SignUpView, custom_logout
 from . import views
 
 
 urlpatterns = [
     
     # to render the home page without a view controller:
-    # path('', TemplateView.as_view(template_name="home.html"), name="home"),
-    # path('', views.home_view, name='home'),
-    
     path('', TemplateView.as_view(template_name="home.html"), name="home"),
-    
     path('about/', views.about_view, name='about'),
     path('contact/', views.contact_view, name='contact'),
     path("signup/", SignUpView.as_view(), name="signup"),
-    path("reset/", views.ResetView.as_view(), name="reset"),
     path("login/", views.login, name="login"),
+    path('custom_logout/', views.custom_logout, name='custom_logout'),
+    path("reset/", views.ResetView.as_view(), name="reset"),
     path('profile/', views.profile_view, name='profile'),
     
-    # path("logout/", views.logout_view, name="logout"),
-    # path('reset/', CustomPasswordResetView.as_view(), name='password_reset'),
-    # path('reset/', TemplateView.as_view(template_name="registration/password_reset.html"), name="reset"),
-    # path('create_user/', views.UserController().create_user, name='create_user'),
-    # path('user_detail/<int:user_id>/', views.UserController().user_detail, name='user_detail'),
-    # path('delete_user/<int:user_id>/', views.UserController().delete_user, name='delete_user'),
-    # path('update_user/<int:user_id>/', views.UserController().update_user, name='update_user'),
-
     path('add_farm/', views.FarmController().create_farm, name='create_farm'),
     path('farm_detail/<int:farm_id>/', views.FarmController.as_view(), name='farm_detail'),
     path('delete_farm/<int:farm_id>/', views.FarmController().delete_farm, name='delete_farm'),

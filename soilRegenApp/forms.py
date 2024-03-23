@@ -1,11 +1,13 @@
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django import forms
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django import forms
-from .models import SoilReport
-from django import forms
-from .models import Farm
-import requests
 import pandas as pd
+import requests
+
+from .models import SoilReport, Farm
+
 
 class AddSoilReportForm(forms.ModelForm):
     class Meta:
@@ -22,12 +24,7 @@ class AddSoilReportForm(forms.ModelForm):
             'field': forms.Select(attrs={'required': True})
         }
 
-class DeleteSoilReportForm(forms.ModelForm):
-    class Meta:
-        model = SoilReport
-        fields = []
-        widgets = {'report_id': forms.HiddenInput()}
-        
+
 class AddFarmForm(forms.ModelForm):
     class Meta:
         model = Farm
@@ -46,6 +43,44 @@ class AddFarmForm(forms.ModelForm):
             'state': forms.TextInput(attrs={'required': True}),
             'zip': forms.TextInput(attrs={'required': True})
         }
+
+
+class CustomUserCreationForm(UserCreationForm):
+    # Add any new fields if necessary
+    email = forms.EmailField(required=True)
+    password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput)
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = UserCreationForm.Meta.fields + ("username", "email", "password1", "password2")
+
+    def __init__(self, *args, **kwargs):
+        super(CustomUserCreationForm, self).__init__(*args, **kwargs)
+        # customization of field labels
+        self.fields['username'].label = 'username:'
+        self.fields['email'].label = 'email:'
+        self.fields['password1'].label = 'password:'
+        self.fields['password2'].label = 'confirm password:'
+        # modify help_texts here as needed
+        # self.fields['username'].help_text = '150 characters or less. Letters and digits only.'
+        # to completely remove the help text:
+        self.fields['username'].help_text = None
+        self.fields['email'].help_text = None
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        # Handle additional fields here
+        if commit:
+            user.save()
+        return user
+
+
+class DeleteSoilReportForm(forms.ModelForm):
+    class Meta:
+        model = SoilReport
+        fields = []
+        widgets = {'report_id': forms.HiddenInput()}
 
 
 class DeleteFarmForm(forms.ModelForm):

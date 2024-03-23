@@ -143,7 +143,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 
-# django_project/settings.py
-EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+# django_project/backend email settings
+# EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+# EMAIL_FILE_PATH = BASE_DIR / "sent_emails"
 
-EMAIL_FILE_PATH = BASE_DIR / "sent_emails"
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.hostinger.com'  # SMTP server host
+EMAIL_PORT = 587  # SMTP server port (587 for TLS, 465 for SSL)
+EMAIL_USE_TLS = True  # Enable TLS (True for TLS, False for plaintext)
+EMAIL_HOST_USER = 'admin@soilregen.tech'  # SMTP username (email address)
+EMAIL_HOST_PASSWORD = 'binary29#AB'  # SMTP password
+DEFAULT_FROM_EMAIL = 'admin@soilregen.tech'  # Default "from" email address

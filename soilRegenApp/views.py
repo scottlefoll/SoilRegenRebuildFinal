@@ -1,34 +1,29 @@
 import requests
 import pandas as pd
 from datetime import datetime, date, timedelta
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordResetForm
-from django.contrib.auth.views import PasswordResetView
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.forms import PasswordResetForm
-from django.db import transaction
-from django.db import IntegrityError
-from django.shortcuts import render, redirect
-from django.shortcuts import get_object_or_404
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
+from django.contrib.auth.views import PasswordResetView
+from django.core.mail import send_mail
+from django.db import transaction, IntegrityError
 from django.http.response import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.template import loader
-from django.urls import reverse
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils import dateformat, formats, timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views import View
-from django.views import generic
+from django.views import View, generic
 from django.views.generic import FormView
-from django.shortcuts import render
+from .forms import CustomUserCreationForm
+
 from soilRegenApp.forms import AddFarmForm, DeleteFarmForm
 from .models import Amendment, AmendmentCategory, AmendmentElement, AmendmentType, Analysis, AnalysisItem
 from .models import Country, Element, Farm, Field, ReportItem, SoilReport, Source, SourceAmendment, UserProfile
 from .services import ReportAnalysisService, RecommendationService, AmendmentRatioService
-
 
 
 def index(request):
@@ -51,16 +46,16 @@ def contact_view(request):
     print("Contact view is being called")
     return render(request, 'contact.html')
 
-
-def logout_view(request):
-    """Render the logout page."""
-    print("Logout view is being called")
-    return render(request, 'registration/logout.html')
-
 def profile_view(request):
     """Render the profile page."""
     print("Profile view is being called")
     return render(request, 'profile.html')
+
+def custom_logout(request):
+    logout(request)
+    print("User has logged out")
+    return render(request, 'logged_out.html')
+
 
 class AmendmentController(View):
     def __init__(self):
@@ -71,7 +66,7 @@ class AmendmentController(View):
         return super().dispatch(*args, **kwargs)
 
     def amendment_list(self, request):
-        amendments = Amendment.objects.all() 
+        amendments = Amendment.objects.all()
         context = {'amendments': amendments.order_by('product_name')}
         return render(request, 'amendment_list.html', context)
 
@@ -458,7 +453,7 @@ class ReportItemController(View):
 
 
 class SignUpView(generic.CreateView):
-    form_class = UserCreationForm
+    form_class = CustomUserCreationForm
     success_url = reverse_lazy("login")
     template_name = "registration/signup.html"
 
@@ -468,6 +463,10 @@ class ResetView(PasswordResetView):
     template_name = "registration/password_reset.html"
     email_template_name = 'registration/password_reset_email.html'  # Optional: customize the email template
     success_url = reverse_lazy("password_reset_done")  # Specify the URL for the password reset done page
+
+    def form_valid(self, form):
+        print("Sending email")
+        return super().form_valid(form)
 
 
 class SoilReportController(View):

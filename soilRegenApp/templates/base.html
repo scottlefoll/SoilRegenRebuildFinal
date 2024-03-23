@@ -53,13 +53,20 @@
             {% if user.is_authenticated %}
                 <ul class="navbar1-ul">
                     <li><a class="nav-choice" href="{% url 'home' %}">Home</a></li>
-                    <!-- <li><a class="nav-choice" href="{% url 'farm_detail' farm_id=10 %}">Dashboard</a></li> -->
-                    <li><a class="nav-choice" href="{% url 'about' %}">Dashboard</a></li>
+                    <li><a class="nav-choice" href="{% url 'profile' %}">Profile</a></li>
                     <li><a class="nav-choice" href="{% url 'about' %}">About</a></li>
                     <li><a class="nav-choice" href="{% url 'contact' %}">Contact</a></li>
-                    <li><a class="nav-choice" href="{% url 'profile' %}">Profile</a></li>
-                    <li><a class="nav-choice" href="{% url 'logout' %}">Logout</a></li>
-                    <span>Welcome, {{ user.username }}</span>
+                    <li>
+                        <!-- <a class="nav-choice" href="{% url 'logout' %}">Logout</a> -->
+                        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <a href="#" onclick="this.parentNode.submit();" class="nav-choice">Logout</a>
+                        </form>
+                    </li>
+                    <!-- Spacer item -->
+                    <li class="spacer"></li>
+                    <!-- nav-welcome item -->
+                    <li id="nav-welcome"><span>Welcome, {{ user.username }}</span></li>
                 </ul>
             {% else %}
                  <ul class="navbar1-ul">
@@ -67,6 +74,7 @@
                     <li><a class="nav-choice" href="{% url 'about' %}">About</a></li>
                     <li><a class="nav-choice" href="{% url 'contact' %}">Contact</a></li>
                     <li><a class="nav-choice" href="{% url 'login' %}">Login</a></li>
+                    <li id="nav-welcome"><span>Guest</li>
                 </ul>
             {% endif %}
             <div class="logo-box">
