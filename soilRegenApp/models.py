@@ -142,6 +142,18 @@ class Field(models.Model):
         db_table = 'field'
 
 
+class Recipe(models.Model):
+    recipe_id = models.AutoField(primary_key=True)
+    recipe_name = models.CharField(max_length=45, blank=False, null=False)
+    recipe_notes = models.CharField(max_length=255, blank=True, null=True)
+    user_id = models.AutoField(primary_key=True)
+    farm = models.ForeignKey(Farm, models.DO_NOTHING, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'field'
+        
+        
 class ReportItem(models.Model):
     item_id = models.AutoField(primary_key=True)
     tested_element = models.CharField(max_length=100, blank=True, null=True)
