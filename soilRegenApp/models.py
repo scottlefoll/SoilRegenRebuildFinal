@@ -1,7 +1,7 @@
 #   * Rearrange models' order
 #   * Make sure each model has one field with primary_key=True
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
-#   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
+#   * Remove `` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 import requests
 import pandas as pd
@@ -34,7 +34,7 @@ class Amendment(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'amendment'
 
 
@@ -43,7 +43,7 @@ class AmendmentCategory(models.Model):
     category_name = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'amendment_category'
 
 
@@ -55,7 +55,7 @@ class AmendmentElement(models.Model):
     element = models.ForeignKey('Element', models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'amendment_element'
         unique_together = ('amendment', 'element')
 
@@ -65,7 +65,7 @@ class AmendmentType(models.Model):
     type_name = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'amendment_type'
 
 
@@ -76,7 +76,7 @@ class Analysis(models.Model):
     soil_report = models.ForeignKey('SoilReport', models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'analysis'
 
 
@@ -87,8 +87,20 @@ class AnalysisItem(models.Model):
     report_item = models.ForeignKey('ReportItem', models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'analysis_item'
+
+
+class Comment(models.Model):
+    comment_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey('UserProfile', on_delete=models.CASCADE, db_index=True)
+    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE, db_index=True, blank=True, null=True)
+    amendment = models.ForeignKey('Amendment', on_delete=models.CASCADE, db_index=True, blank=True, null=True)
+    comment_text = models.CharField(max_length=255, null=False)
+
+    class Meta:
+        
+        db_table = 'field'
 
 
 class Country(models.Model):
@@ -96,7 +108,7 @@ class Country(models.Model):
     country_name = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'country'
 
 
@@ -108,7 +120,7 @@ class Element(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'element'
 
 
@@ -124,7 +136,7 @@ class Farm(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
 
     class Meta:
-        managed = False
+        
         db_table = 'farm'
 
 
@@ -138,20 +150,30 @@ class Field(models.Model):
     farm = models.ForeignKey(Farm, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'field'
 
 
 class Recipe(models.Model):
     recipe_id = models.AutoField(primary_key=True)
-    recipe_name = models.CharField(max_length=45, blank=False, null=False)
+    recipe_name = models.CharField(max_length=45, null=False)
     recipe_notes = models.CharField(max_length=255, blank=True, null=True)
-    user_id = models.AutoField(primary_key=True)
-    farm = models.ForeignKey(Farm, models.DO_NOTHING, blank=True, null=True)
+    user = models.ForeignKey('UserProfile', on_delete=models.CASCADE, db_index=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'field'
+        
+
+class RecipeAmendment(models.Model):
+    recipe_amendment_id = models.AutoField(primary_key=True)
+    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE, related_name='recipe_amendments', db_index=True)
+    amendment = models.ForeignKey('Amendment', on_delete=models.CASCADE, db_index=True)
+    recipe_amendment_notes = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        
+        db_table = 'recipe_amendment'
         
         
 class ReportItem(models.Model):
@@ -164,7 +186,7 @@ class ReportItem(models.Model):
     report = models.ForeignKey('SoilReport', models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'report_item'
 
 
@@ -175,7 +197,7 @@ class SoilReport(models.Model):
     field = models.ForeignKey(Field, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'soil_report'
 
 
@@ -192,7 +214,7 @@ class Source(models.Model):
     notes = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'source'
 
 
@@ -202,21 +224,21 @@ class SourceAmendment(models.Model):
     amendment = models.ForeignKey(Amendment, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'source_amendment'
         unique_together = ('source', 'amendment')
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    street_address = models.CharField(max_length=50, blank=True, null=True)
-    town = models.CharField(max_length=50, blank=True, null=True)
-    state = models.CharField(max_length=2, blank=True, null=True)
-    zip = models.CharField(max_length=5, blank=True, null=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE )
+    street_address = models.CharField(max_length=50, blank=True, null=False)
+    town = models.CharField(max_length=50, blank=True, null=False)
+    state = models.CharField(max_length=2, blank=True, null=False)
+    zip = models.CharField(max_length=5, blank=True, null=False)
     phone = models.CharField(max_length=10, blank=True, null=True)
     notes = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
+        
         db_table = 'user_profile'
 
