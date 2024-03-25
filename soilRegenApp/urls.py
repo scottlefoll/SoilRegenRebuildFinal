@@ -40,4 +40,6 @@ urlpatterns = [
     path('analysis_list/', views.AnalysisController().analysis_list, name='analysis_list'),
     path('farm_list/', views.FarmController().farm_list, name='farm_list'),
     path('field_list/', views.FieldController().field_list, name='field_list'),
+    
+    path('recipes/', recipe_list_view, name='recipe_list')
 ]

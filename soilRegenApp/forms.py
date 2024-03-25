@@ -1,12 +1,12 @@
+import pandas as pd
+import requests
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django import forms
 from django.shortcuts import render, redirect
 from django.urls import reverse
-import pandas as pd
-import requests
 
-from .models import SoilReport, Farm
+from .models import SoilReport, Farm, Recipe
 
 
 class AddSoilReportForm(forms.ModelForm):
@@ -88,3 +88,10 @@ class DeleteFarmForm(forms.ModelForm):
         model = Farm
         fields = []
         widgets = {'id': forms.HiddenInput()}
+
+
+class RecipeForm(forms.ModelForm):
+    class Meta:
+        model = Recipe
+        fields = ['recipe_name', 'recipe_notes']
+        # Additional options like labels and widgets can be specified here

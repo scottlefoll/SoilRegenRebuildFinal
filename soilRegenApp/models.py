@@ -100,7 +100,7 @@ class Comment(models.Model):
 
     class Meta:
         
-        db_table = 'field'
+        db_table = 'comment'
 
 
 class Country(models.Model):
@@ -133,7 +133,7 @@ class Farm(models.Model):
     zip = models.CharField(max_length=5, blank=True, null=True)
     state = models.CharField(max_length=2, blank=True, null=True)
     description = models.CharField(max_length=255, blank=True, null=True)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
 
     class Meta:
         
@@ -162,7 +162,7 @@ class Recipe(models.Model):
 
     class Meta:
         
-        db_table = 'field'
+        db_table = 'recipe'
         
 
 class RecipeAmendment(models.Model):
@@ -230,15 +230,14 @@ class SourceAmendment(models.Model):
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE )
-    street_address = models.CharField(max_length=50, blank=True, null=False)
-    town = models.CharField(max_length=50, blank=True, null=False)
-    state = models.CharField(max_length=2, blank=True, null=False)
-    zip = models.CharField(max_length=5, blank=True, null=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, default=None)
+    street_address = models.CharField(max_length=50, blank=True, null=False, default='123 Main St')
+    town = models.CharField(max_length=50, blank=True, null=False, default='Maidstone')
+    state = models.CharField(max_length=2, blank=True, null=False, default='VT')
+    zip = models.CharField(max_length=5, blank=True, null=False, default='05905')
     phone = models.CharField(max_length=10, blank=True, null=True)
     notes = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        
         db_table = 'user_profile'
 

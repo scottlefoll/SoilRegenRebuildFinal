@@ -1,0 +1,7 @@
+"user_id";"street_address";"town";"state";"zip";"phone";"notes"
+1;"123 Elm St";"Herkimer";"NY";"10001";"1234567890";"Example Note 1"
+2;"456 Oak St";"Smithtown";"NY";"10002";"0987654321";"Example Note 2"
+3;"395 Vt. Route 102";"Maidstone";"VT";"05905";"8022742548";"12 year organic farmer, recent CSA"
+4;"321 Maple St";"Barstow";"CA";"90002";"2223334444";"Example Note 4"
+5;"654 Spruce St";"Abilene";"TX";"75001";"3334445555";"Example Note 5"
+6;"987 Birch St";"El Paso";"TX";"75002";"4445556666";"Example Note 6"

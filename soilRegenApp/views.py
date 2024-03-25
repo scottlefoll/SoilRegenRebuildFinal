@@ -20,9 +20,9 @@ from django.views import View, generic
 from django.views.generic import FormView
 from .forms import CustomUserCreationForm
 
-from soilRegenApp.forms import AddFarmForm, DeleteFarmForm
+from .forms import AddFarmForm, DeleteFarmForm, RecipeForm
 from .models import Amendment, AmendmentCategory, AmendmentElement, AmendmentType, Analysis, AnalysisItem
-from .models import Country, Element, Farm, Field, ReportItem, SoilReport, Source, SourceAmendment, UserProfile
+from .models import Country, Element, Farm, Field, Recipe, ReportItem, SoilReport, Source, SourceAmendment, UserProfile
 from .services import ReportAnalysisService, RecommendationService, AmendmentRatioService
 
 
@@ -56,6 +56,11 @@ def custom_logout(request):
     print("User has logged out")
     return render(request, 'logged_out.html')
 
+@login_required(login_url='/accounts/login/')
+def recipe_list_view(request):
+    """Fetches and displays a list of recipes."""
+    recipes = Recipe.objects.filter(user=request.user.profile).order_by('recipe_name')
+    return render(request, 'home.html', {'recipes': recipes})
 
 class AmendmentController(View):
     def __init__(self):
@@ -385,6 +390,61 @@ class FieldController(View):
         return redirect('field_list')
 
 
+class RecipeController(View):
+    
+    @method_decorator(login_required(login_url='/accounts/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def recipe_list(self, request):
+        user_profile = UserProfile.objects.get(user=request.user)
+        recipes = Recipe.objects.filter(user=user_profile).order_by('recipe_name')
+        context = {'recipes': recipes}
+        return render(request, 'recipe_list.html', context)
+
+    def recipe_detail(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+        context = {'recipe': recipe}
+        return render(request, 'recipe_detail.html', context)
+
+    def create_recipe(self, request):
+        if request.method == 'POST':
+            form = RecipeForm(request.POST)
+            if form.is_valid():
+                new_recipe = form.save(commit=False)
+                new_recipe.user = UserProfile.objects.get(user=request.user)
+                new_recipe.save()
+                messages.success(request, 'Recipe added successfully!')
+                return redirect('recipe_list')
+            else:
+                for error in form.errors:
+                    messages.error(request, f"{error}: {form.errors[error]}")
+        else:
+            form = RecipeForm()
+        return render(request, 'recipe_form.html', {'form': form})
+
+    def update_recipe(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+        if request.method == 'POST':
+            form = RecipeForm(request.POST, instance=recipe)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Recipe updated successfully!')
+                return redirect('recipe_detail', recipe_id=recipe.recipe_id)
+            else:
+                for error in form.errors:
+                    messages.error(request, f"{error}: {form.errors[error]}")
+        else:
+            form = RecipeForm(instance=recipe)
+        return render(request, 'recipe_form.html', {'form': form, 'recipe': recipe})
+
+    def delete_recipe(self, request, recipe_id):
+        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+        recipe.delete()
+        messages.success(request, 'Recipe deleted successfully!')
+        return redirect('recipe_list')
+    
+    
 class ReportItemController(View):
     def __init__(self):
         self.api_key = settings.API_KEY
