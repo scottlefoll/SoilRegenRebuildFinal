@@ -17,6 +17,10 @@
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Varela+Round" />
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Proxima+Nova" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+    {% block extra_css %}
+    {% endblock %}
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="https://kit.fontawesome.com/4414288e8e.js"></script>
@@ -53,6 +57,7 @@
             {% if user.is_authenticated %}
                 <ul class="navbar1-ul">
                     <li><a class="nav-choice" href="{% url 'home' %}">Home</a></li>
+                    <li><a class="nav-choice" href="{% url 'recipe_list' %}">Recipe</a></li>                    
                     <li><a class="nav-choice" href="{% url 'profile' %}">Profile</a></li>
                     <li><a class="nav-choice" href="{% url 'about' %}">About</a></li>
                     <li><a class="nav-choice" href="{% url 'contact' %}">Contact</a></li>
@@ -71,6 +76,7 @@
             {% else %}
                  <ul class="navbar1-ul">
                     <li><a class="nav-choice" href="{% url 'home' %}">Home</a></li>
+                    <li><a class="nav-choice" href="{% url 'recipe_list' %}">Recipe</a></li>
                     <li><a class="nav-choice" href="{% url 'about' %}">About</a></li>
                     <li><a class="nav-choice" href="{% url 'contact' %}">Contact</a></li>
                     <li><a class="nav-choice" href="{% url 'login' %}">Login</a></li>
@@ -85,16 +91,13 @@
                     alt="Farming hands"
                 /></a>
             </div>
-            <h1 id="main-title" class="home-headline1">SoilRegen</h1>
+            <h1 id="main-title">SoilRegen</h1>
           </nav>
-        </div>
-        <div class="header-bar">
-            <!-- Add a color bar here -->
         </div>
       </header>
 
       <main onload="displayArt()">
-        <div class="container" id="page-container">
+        <div class="container-page" id="page-container">
           <div class="banner-box">
             <img
               class="mySlides w3-animate-fading"
@@ -174,40 +177,17 @@
                 title="Iframe Circle_Menu"
             ></iframe>
 
-            <!-- <h2 class="home-headline1a">Organic and Regenerative Agriculture</h2>
-            <h3 class="home-headline2">Soil Health</h3>
-
-            <p class="home-paragraph1">
-              Regenerative farming is a holistic land management practice that focuses on improving 
-              soil health. The goals are to restore the soil's ability to capture water, carbon, and other nutrients, thus improving biodiversity, 
-              enhancing ecosystems, and combating climate change. This approach goes beyond sustainable agriculture by aiming not just to maintain, 
-              but to enhance soil fertility and global biodiversity. </p>
-
-            <p class="home-paragraph1">
-              For more information on regenerative farming click here: 
-              <a href="https://www.ecofarmingdaily.com/the-principles-of-regenerative-agriculture/" target="_self">regenerative farming</a>. </p>
-            <p class="home-paragraph1">
-              If you would like to read more about organic farming, click here: 
-              <a href="https://broadforkfarm.com/do-you-know-the-principles-of-organic-farming/" target="_self">organic farming</a>.</p>
-
-            <div class="home-paragraph1">
-                <h3 class="home-headline2">Regenerative Farming</h3>
-                <p>The principles of regenerative and organic farming include:</p>
+            <div id="message-wrap">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert {{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
             </div>
-            <ul>
-                <li><strong>&nbsp;&nbsp;--Soil Health Improvement:</strong> Maintaining soil health through practices like cover cropping and crop rotation.</li>
-                <li><strong>&nbsp;&nbsp;--Carbon Sequestration:</strong> Healthy soil creates, absorbs and stores more nutrients.</li>
-                <li><strong>&nbsp;&nbsp;--Biodiversity Enhancement:</strong> Fostering various plant species and supporting wildlife populations.</li>
-                <li><strong>&nbsp;&nbsp;--No-Tillage:</strong> Avoid soil disturbance, which destroys soil structure and reduces beneficial soil microbiology.</li>
-                <li><strong>&nbsp;&nbsp;--Integration of Livestock:</strong> Animals contribute to soil health by cycling nutrients and stimulating plant growth.</li>
-                <li><strong>&nbsp;&nbsp;--Perennial Crops:</strong> Plants that live longer and contribute to soil health by providing continual ground cover.</li>
-            </ul><br>
 
-            <p class="home-paragraph1">
-              By prioritizing soil health, regenerative farming has the potential to create resilient farms that produce high-quality, nutrient-dense food, 
-              while also playing a crucial role in biodiversity and maintaining a healthy environment.</p> -->
-
-            <br><br><br><br><br><br><br><br> 
+            <br><br><br><br><br><br><br><br><br><br>
 
             {% block content %}
             {% endblock %}
@@ -237,6 +217,6 @@
     </div>
     <script>
         document.getElementById('current-year').textContent = new Date().getFullYear();
-      </script>
+    </script>
   </body>
 </html>

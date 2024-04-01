@@ -1,0 +1,15 @@
+p {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 1.15em;
+    font-weight: 550;
+    line-height: 1.43;
+}
+
+.btn {
+    margin: 3px;
+}
+
+.container {
+    width: 100%;
+}
+

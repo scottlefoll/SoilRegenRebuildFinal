@@ -3,33 +3,50 @@
 
 {% block content %}
 <div id="content-wrap">
-    <h2>{{ report.lab_name }} Soil Report</h2> 
-    <a href="{% url 'update_report' report_id=report.report_id %}"><button>Update Report</button></a>
-    <a href="{% url 'delete_report' report_id=report.report_id %}"><button>Delete Report</button></a>
-    <p>Report ID: {{ report.report_id }}</p>
-    <p>Report Date: {{ report.report_date|date:"m/d/Y" }}</p>
-    <p>Lab Name: {{ report.lab_name }}</p>
-    <p>Field: {{ report.field }}</p>
+    <h2>{{ stock.name }} ({{ stock.symbol }})</h2> 
+    <a href="{% url 'update_stock' symbol=stock.symbol name=stock.name date=stock.date %}"><button>Update Farm</button></a>
+    <a href="{% url 'delete_stock' stock.symbol %}"><button>Delete Farm</button></a>
+    <p>Last closing price: ${{ stock.close }} &emsp; Date: {{ stock.date }} &emsp; Volume: {{ stock.volume|intcomma }} &emsp; Exchange: {{ stock.exchange }}</p>
     <br>
-    <div id="report-item-list-div">
-        <table class="report-item-table">
+    <div id="stock-detail-table-div">
+        <table class="stock-table">
             <thead>
                 <tr>
-                    <th>Tested Element</th>
-                    <th>Unit</th>
-                    <th>Results</th>
-                    <th>Target Ratio</th>
-                    <th>Target Level</th>
+                    <th>Date</th>
+                    <th>Open</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Close</th>
+                    <th>Volume</th>
+                    <th>Adjusted High</th>
+                    <th>Adjusted Low</th>
+                    <th>Adjusted Close</th>
+                    <th>Adjusted Open</th>
+                    <th>Adjusted Volume</th>
+                    <th>Split Factor</th>
+                    <th>Dividend</th>
+                    <th>Symbol</th>
+                    <th>Exchange</th>
                 </tr>
             </thead>
             <tbody>
-                {% for item in report_items %}
+                {% for price in stock_prices %}
                 <tr>
-                    <td>{{ item.tested_element }}</td>
-                    <td>{{ item.unit }}</td>
-                    <td>{{ item.results }}</td>
-                    <td>{{ item.target_ratio }}</td>
-                    <td>{{ item.target_level }}</td>
+                    <td>{{ price.date|date:"m/d/y" }}</td>
+                    <td>{{ price.open }}</td>
+                    <td>{{ price.high }}</td>
+                    <td>{{ price.low }}</td>
+                    <td>{{ price.close }}</td>
+                    <td>{{ price.volume|intcomma }}</td>
+                    <td>{{ price.adj_high }}</td>
+                    <td>{{ price.adj_low }}</td>
+                    <td>{{ price.adj_close }}</td>
+                    <td>{{ price.adj_open }}</td>
+                    <td>{{ price.volume|intcomma }}</td>
+                    <td>{{ price.split_factor }}</td>
+                    <td>{{ price.dividend }}</td>
+                    <td>{{ price.symbol }}</td>
+                    <td>{{ price.exchange }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

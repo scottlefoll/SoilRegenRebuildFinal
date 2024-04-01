@@ -21,17 +21,6 @@
             <p><a href="{% url 'password_reset' %}">Forgot Password?</a></p> -->
         {% endif %}
 
-        {% if recipes %}
-            <h3>Your Recipes</h3>
-            <ul>
-                {% for recipe in recipes %}
-                    <li>{{ recipe.recipe_name }} - {{ recipe.recipe_notes }}</li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>You have no recipes.</p>
-        {% endif %}
-
     </div>
     <br><br><br><br>
 {% endblock %}

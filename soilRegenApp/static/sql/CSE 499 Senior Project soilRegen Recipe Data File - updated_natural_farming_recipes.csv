@@ -1,0 +1,11 @@
+recipe_id,recipe_name,recipe_description,recipe_rate,recipe_notes,application_id,practice_id,recipe_category_id,recipe_type_id,unit_id,user_id
+12,Phosphorus Fix,Add that special something to your crops,50,Enhances phosphorus for root and flower development.,5,8,7,4,1,3
+13,Potassium Kick,When you want to increase the fruiting potential,2,Boosts potassium for overall plant health.,3,8,3,3,1,4
+15,Acidity Adjuster,When you want to increase the fruiting potential,1,Lowers soil pH to increase acidity.,5,8,11,2,10,3
+16,Alkalinity Alleviator,When you want to increase the fruiting potential,5,Raises soil pH to reduce acidity.,4,11,10,2,1,4
+18,Drainage Dynamo,When you want to increase the fruiting potential,6,Enhances drainage in compact soils.,1,12,13,1,2,3
+19,Organic Matter Maximizer,When you want to increase the fruiting potentialWhen you wan,1,Maximizes organic content for soil fertility.,5,10,13,5,10,4
+20,Microbe Multiplier,Boost your soil's living organisms,3,Promotes beneficial microbe populations.,3,12,5,2,4,5
+21,Nitrogen Nourisher,Enhances leaf growth and greenness,4,Increases nitrogen availability.,5,8,14,2,1,3
+22,Calcium Connector,Strengthens plant cell walls,2,Improves calcium uptake.,4,11,7,3,1,4
+23,Sulfur Supplement,For better protein synthesis,5,Enhances sulfur content for healthier plants.,1,12,7,1,2,5

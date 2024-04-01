@@ -1,0 +1,188 @@
+<!-- templates/recipe-steps.html -->
+<div id="content-wrap3">
+    <div class="container">
+        <div class="row">
+            <!-- Recipe List Column -->
+            <div class="col-md-7" id="recipe-steps-panel">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <div class="row">
+                                <h3 class="panel-title" id="recipe-steps-title">Steps</h3>
+                                <form class="form-inline">
+                                    <!-- Button Column -->
+                                    <div class="form-group">
+                                        <button class="btn btn-success btn-block btn-new-recipe-step">New Step</button>
+                                    </div>
+                                </form>
+                        </div>
+                    </div>
+
+                    <div class="panel-body">
+                        <div>
+                            {% if recipe-steps %}
+                                <div class="list-group" id="recipeStepsList">
+                                    {% for recipe_step in recipe-steps %}
+                                        <a href="#" 
+                                            class="list-group-item list-group-item-action" 
+                                            id="recipe-step-item"
+                                            data-id="{{ recipe_step.recipe_step_id }}"
+                                            data-name="{{ recipe_step.recipe_step_name }}" 
+                                            data-description="{{ recipe_step.recipe_step_description }}"
+                                            data-notes="{{ recipe_step.recipe_step_notes }}"
+                                            data-recipe_step_id="{{ recipe_step.recipe_id }}"
+                                        >
+                                        {{ recipe_step.recipe_step_number }} - {{ recipe_step.recipe_step_name }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5" id="recipe-step-item-panel" hidden=true>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <div class="row">
+                            <div class="panel-heading">
+                                <h3 class="panel-title" id="recipe-step-item-title">Step</h3>
+                            </div>
+                            <div class="d-flex justify-content-end" id="recipe-btn-box">
+                                
+                                <button class="btn btn-success btn-detail-recipe"
+                                    onclick=""
+                                    style="cursor: pointer;">Detail</button>
+                                
+                                <button class="btn btn-danger btn-delete-recipe-step"
+                                    onclick=""
+                                    style="cursor: pointer; visibility: hidden;">Delete</button>
+
+                                <button class="btn btn-primary btn-edit-recipe-step"
+                                    onclick=""
+                                    style="cursor: pointer; display: none;">Edit</button>
+
+                            </div>
+
+                            <div class="col-xs-12">
+                                <p id="recipe-step-name" style="margin-top: 10px; margin-bottom: 2px;">Name: <span></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <p id="recipe-step-id">ID: <span></span></p>
+                        <p id="recipe-step-number">Step #: <span></span></p>
+                        <p id="recipe-step-name">Step Name: <span></span></p>
+                        <p id="recipe-step-description">Description: <span></span></p>
+                        <p id="recipe-step-notes">Notes: <span></span></p>
+                        <p id="recipe-step-recipe-id">Recipe ID: <span></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br><br><br><br>
+
+<script type="text/javascript">
+    // Directly generate the base URLs for editing and deleting without the placeholder
+    var editBaseUrl2 = "{% url 'edit_recipe_step' 0 %}".replace('/0/', '/');
+    var detailBaseUrl = "{% url 'recipe_step_detail' 0 %}".replace('/0/', '/');
+    var deleteBaseUrl = "{% url 'delete_recipe_step' 0 %}".replace('/0/', '/');
+</script>
+
+{% verbatim %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const recipeItems = document.querySelectorAll('#recipeList .list-group-item');
+        const recipeId = document.getElementById('recipe-id').querySelector('span');
+        const recipeName = document.getElementById('recipe-name').querySelector('span');
+        const recipeDescription = document.getElementById('recipe-description').querySelector('span');
+        const recipePractice = document.getElementById('recipe-practice').querySelector('span');
+        const recipeApplication = document.getElementById('recipe-application').querySelector('span');
+        const recipeRate = document.getElementById('recipe-rate').querySelector('span');
+        const recipeRateUnits = document.getElementById('recipe-rate-units').querySelector('span');
+        const recipeType = document.getElementById('recipe-type').querySelector('span');
+        const recipeCategory = document.getElementById('recipe-category').querySelector('span');
+        const recipeNotes = document.getElementById('recipe-notes').querySelector('span');
+        const recipeItemSection = document.getElementById('recipe-item-panel');
+        const recipeDeleteBtn = document.querySelector('.btn-delete-recipe');
+        const recipeEditBtn = document.querySelector('.btn-edit-recipe');
+        const recipeDetailBtn = document.querySelector('.btn-detail-recipe');
+
+        recipeItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                const description = this.getAttribute('data-description');
+                const type = this.getAttribute('data-type');
+                const category = this.getAttribute('data-category');
+                const practice = this.getAttribute('data-practice');
+                const application = this.getAttribute('data-application');
+                const rate = this.getAttribute('data-rate');
+                const rate_units = this.getAttribute('data-rate-units');
+                const notes = this.getAttribute('data-notes');
+                const isOwner = this.getAttribute('data-is-owner');
+
+                // Update the recipe item section with the selected recipe's information
+                recipeName.textContent = name;
+                recipeId.textContent = id;
+                recipeDescription.textContent = description;
+                recipeType.textContent = type;
+                recipeCategory.textContent = category;
+                recipePractice.textContent = practice;
+                recipeApplication.textContent = application;
+                recipeRate.textContent = rate;
+                recipeRateUnits.textContent = rate_units;
+                recipeNotes.textContent = notes;
+
+                if (isOwner === 'True') {
+                    recipeDeleteBtn.style.visibility = 'visible';
+                    recipeEditBtn.style.display = 'none';
+
+                    // Dynamically set the onclick attribute for edit and delete buttons
+                    recipeEditBtn.onclick = function() { window.location.href = editBaseUrl + id  + '?mode=edit';};
+                    recipeDeleteBtn.onclick = function() { window.location.href = deleteBaseUrl + id; };
+                } else {
+                    recipeDeleteBtn.style.visibility = 'hidden';
+                    recipeEditBtn.style.display = 'none';
+                }
+
+                recipeDetailBtn.onclick = function() { window.location.href = detailBaseUrl + id  + '?mode=detail';};
+                // Show the recipe item panel if it was hidden
+                recipeItemSection.hidden = false; // To show it
+            });
+        });
+    });
+</script>
+{% endverbatim %}
+
+<script>
+    // check the URL for a curr_id query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const curr_id = urlParams.get('curr_id');
+    console.log("urlParams = ", urlParams, "curr_id = ", curr_id);
+</script>
+
+{% if curr_id %}
+    <script>
+        console.log("Simulate click script loaded!");
+        document.addEventListener('DOMContentLoaded', function() {
+            // Convert curr_id to string to ensure proper comparison
+            console.log("DOMContentLoaded event fired!")
+            var currId = "{{ curr_id }}";
+            console.log("Query curr_id = ", currId);
+            var recipeSteps = document.querySelectorAll('[data-id]');
+            console.log(recipeSteps);
+            recipeItems.forEach(function(item) {
+                console.log("For each: Query currId = ", curr_id, "RecipeSteps(item.id) = ", item.getAttribute('data-id'));
+                if (item.getAttribute('data-id') === currId) {
+                    console.log("Clicking item: ", item);
+                    item.click();  // Simulate click
+                }
+            });
+        });
+    </script>
+{% endif %}
+

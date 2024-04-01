@@ -154,26 +154,146 @@ class Field(models.Model):
         db_table = 'field'
 
 
+class RecipeType(models.Model):
+    recipe_type_id = models.AutoField(primary_key=True)
+    recipe_type_name = models.CharField(max_length=45, blank=True, default='')
+
+    def __str__(self):
+        return self.recipe_type_name
+    
+    class Meta:
+
+        db_table = 'recipe_type'
+
+
+class RecipeCategory(models.Model):
+    recipe_category_id = models.AutoField(primary_key=True)
+    recipe_category_name = models.CharField(max_length=45, blank=True, default='')
+
+    def __str__(self):
+        return self.recipe_category_name
+    
+    class Meta:
+        
+        db_table = 'recipe_category'
+        
+
+class Application(models.Model):
+    application_id = models.AutoField(primary_key=True)
+    application_name = models.CharField(max_length=20, blank=True, default='')
+
+    def __str__(self):
+        return self.application_name
+    
+    class Meta:
+
+        db_table = 'application'
+
+
+class Practice(models.Model):
+    practice_id = models.AutoField(primary_key=True)
+    practice_name = models.CharField(max_length=20, blank=True, default='')
+    practice_description = models.CharField(max_length=100, blank=True, default='')
+
+    def __str__(self):
+        return self.practice_name
+    
+    class Meta:
+
+        db_table = 'practice'
+
+
+class Unit(models.Model):
+    unit_id = models.AutoField(primary_key=True)
+    unit_name = models.CharField(max_length=45, blank=True, default='')
+
+    def __str__(self):
+        return self.unit_name
+    
+    class Meta:
+
+        db_table = 'unit_type'
+        
+        
+class Ingredient(models.Model):
+    ingredient_id = models.AutoField(primary_key=True)
+    ingredient_name = models.CharField(max_length=45, blank=True, default='')
+    ingredient_description = models.CharField(max_length=100, blank=True, default='')
+    practice = models.ForeignKey('Practice', models.DO_NOTHING, blank=True, default='')
+    ingredient_category = models.ForeignKey('IngredientCategory', models.DO_NOTHING, blank=True, default='')
+    ingredient_type = models.ForeignKey('IngredientType', models.DO_NOTHING, blank=True, default='')
+
+    class Meta:
+
+        db_table = 'ingredient'
+
+
+class IngredientCategory(models.Model):
+    cat_id = models.AutoField(primary_key=True)
+    category_name = models.CharField(max_length=45, blank=True, default='')
+
+    def __str__(self):
+        return self.unit_name
+    
+    class Meta:
+
+        db_table = 'ingredient_category'
+
+
+class IngredientType(models.Model):
+    ingredient_type_id = models.AutoField(primary_key=True)
+    ingredient_type_name = models.CharField(max_length=45, blank=True, default='')
+
+    def __str__(self):
+        return self.unit_name
+    
+    class Meta:
+
+        db_table = 'ingredient_type'
+        
+        
 class Recipe(models.Model):
     recipe_id = models.AutoField(primary_key=True)
-    recipe_name = models.CharField(max_length=45, null=False)
-    recipe_notes = models.CharField(max_length=255, blank=True, null=True)
+    recipe_name = models.CharField(max_length=45, blank=True, default='')
+    recipe_description = models.CharField(max_length=100, blank=True, default='')
+    recipe_type = models.ForeignKey('RecipeType', on_delete=models.DO_NOTHING, db_index=True)
+    recipe_category = models.ForeignKey('RecipeCategory', on_delete=models.DO_NOTHING, db_index=True)
+    practice = models.ForeignKey('Practice', on_delete=models.DO_NOTHING, db_index=True)
+    application = models.ForeignKey('Application', on_delete=models.DO_NOTHING, db_index=True)
+    recipe_rate = models.FloatField(blank=True, default=0.0)
+    unit = models.ForeignKey('Unit', on_delete=models.DO_NOTHING, db_index=True)
+    recipe_notes = models.CharField(max_length=255, blank=True, default='')
     user = models.ForeignKey('UserProfile', on_delete=models.CASCADE, db_index=True)
 
     class Meta:
-        
         db_table = 'recipe'
-        
 
-class RecipeAmendment(models.Model):
-    recipe_amendment_id = models.AutoField(primary_key=True)
-    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE, related_name='recipe_amendments', db_index=True)
-    amendment = models.ForeignKey('Amendment', on_delete=models.CASCADE, db_index=True)
-    recipe_amendment_notes = models.CharField(max_length=255, blank=True, null=True)
+
+class RecipeIngredient(models.Model):
+    recipe_ingredient_id = models.AutoField(primary_key=True)
+    recipe_ingredient_quantity = models.FloatField(blank=True, default='0')
+    unit = models.ForeignKey('Unit', on_delete=models.DO_NOTHING, db_index=True)
+    source = models.ForeignKey('Source', on_delete=models.DO_NOTHING, db_index=True)
+    recipe_ingredient_notes = models.CharField(max_length=255, blank=True, null=True)
+    recipe = models.ForeignKey(Recipe, models.CASCADE, db_index=True)
+    ingredient = models.ForeignKey(Ingredient, models.DO_NOTHING, db_index=True)
 
     class Meta:
         
-        db_table = 'recipe_amendment'
+        db_table = 'recipe_ingredient'
+        
+        
+class RecipeStep(models.Model):
+    recipe_step_id = models.AutoField(primary_key=True)
+    recipe_step_number = models.IntegerField(blank=True, default='0')
+    recipe_step_name = models.CharField(max_length=50, blank=True, default='')
+    recipe_step_description = models.CharField(max_length=100, blank=True, default='')
+    recipe_step_notes = models.CharField(max_length=255, blank=True, null=True)
+    recipe = models.ForeignKey(Recipe, models.CASCADE, db_index=True)
+
+    class Meta:
+        
+        db_table = 'recipe_step'
         
         
 class ReportItem(models.Model):
@@ -183,7 +303,7 @@ class ReportItem(models.Model):
     results = models.FloatField(blank=True, null=True)
     target_ratio = models.FloatField(blank=True, null=True)
     target_level = models.FloatField(blank=True, null=True)
-    report = models.ForeignKey('SoilReport', models.DO_NOTHING, blank=True, null=True)
+    report = models.ForeignKey('SoilReport', models.DO_NOTHING, db_index=True)
 
     class Meta:
         
@@ -194,7 +314,7 @@ class SoilReport(models.Model):
     report_id = models.AutoField(primary_key=True)
     report_date = models.DateField(blank=True, null=True)
     lab_name = models.CharField(max_length=50, blank=True, null=True)
-    field = models.ForeignKey(Field, models.DO_NOTHING, blank=True, null=True)
+    field = models.ForeignKey(Field, models.DO_NOTHING,  db_index=True)
 
     class Meta:
         
@@ -203,16 +323,12 @@ class SoilReport(models.Model):
 
 class Source(models.Model):
     source_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=50, blank=True, null=True)
-    contact_name = models.CharField(max_length=50, blank=True, null=True)
-    street_address = models.CharField(max_length=50, blank=True, null=True)
-    town = models.CharField(max_length=50, blank=True, null=True)
-    state = models.CharField(max_length=2, blank=True, null=True)
-    zip = models.CharField(max_length=5, blank=True, null=True)
-    phone = models.CharField(max_length=10, blank=True, null=True)
-    email = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=45, blank=True, default='0')
     notes = models.CharField(max_length=255, blank=True, null=True)
 
+    def __str__(self):
+        return self.unit_name
+    
     class Meta:
         
         db_table = 'source'
@@ -227,8 +343,8 @@ class SourceAmendment(models.Model):
         
         db_table = 'source_amendment'
         unique_together = ('source', 'amendment')
-
-
+        
+        
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, default=None)
     street_address = models.CharField(max_length=50, blank=True, null=False, default='123 Main St')
@@ -240,4 +356,5 @@ class UserProfile(models.Model):
 
     class Meta:
         db_table = 'user_profile'
+
 

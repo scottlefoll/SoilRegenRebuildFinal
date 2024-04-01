@@ -1,0 +1,100 @@
+<!-- templates/recipe_form.html -->
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}
+    {% if IsEditMode %}
+        Edit Recipe
+    {% else %}
+        Recipe Detail
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %} 
+    <link rel="stylesheet" href="{% static 'soilRegenApp/css/recipe_form.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div id="content-wrap3">
+        <div class="container mt-4">
+            <form method="post" class="recipe-form">
+                {% csrf_token %}
+                {% if IsEditMode %}
+                    <h2 id="recipe-form-title">Edit Recipe:</h2>
+                {% else %}
+                    <h2 id="recipe-form-title">Recipe Detail:</h2>
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-6 recipe-form-fields">
+                        <div class="form-group">
+                            <label for="{{ form.recipe_name.id_for_label }}">Recipe Name:</label>
+                            {{ form.recipe_name }}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.recipe_description.id_for_label }}">Recipe Name:</label>
+                            {{ form.recipe_description }}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.recipe_category_id.id_for_label }}">Category:</label>
+                            {{ form.recipe_category }}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.recipe_type_id.id_for_label }}">Type:</label>
+                            {{ form.recipe_type }}
+                        </div>
+                    </div>
+                    <div class="col-md-6 recipe-form-fields">
+
+                        <div class="form-group">
+                            <label for="{{ form.application.id_for_label }}">Recipe Name:</label>
+                            {{ form.application }}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.practice.id_for_label }}">Recipe Name:</label>
+                            {{ form.practice }}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.recipe_rate.id_for_label }}">Rate:</label>
+                            {{ form.recipe_rate }}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.unit_id.id_for_label }}">Units:</label>
+                            {{ form.unit }}
+                        </div>
+                    </div>
+
+                    <div class="col-12 recipe-form-fields">
+                        <div class="form-group" id="recipe-form-notes">
+                            <label for="{{ form.recipe_notes.id_for_label }}">Notes:</label>
+                            {{ form.recipe_notes }}
+                        </div>
+                    </div>
+                </div>
+
+                
+                {% if IsEditMode %}
+                    <div class="row">
+                        <div class="col-md-6 recipe-form-buttons">
+                            <button type="submit" name="submitBtn" class="btn btn-primary">Submit</button>
+                            <button type="button" name="cancelBtn" class="btn btn-danger" onclick="window.location.href='{% url 'recipe_list' %}?curr_id={{ recipe_id }}'">Cancel</button>                            
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row">
+                        <div class="col-md-6 recipe-form-buttons">
+                            <button type="button" name="editBtn" class="btn btn-primary" onclick="window.location.href='?mode=edit'">Edit</button>
+                            <button type="button" name="recipeListBtn" class="btn btn-success" onclick="window.location.href='{% url 'recipe_list' %}?curr_id={{ recipe_id }}'">Recipe List</button>
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+{% endblock %}

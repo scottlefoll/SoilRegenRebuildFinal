@@ -1,0 +1,175 @@
+<!-- templates/recipe.html -->
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Recipe{% endblock %}
+
+{% block extra_css %} 
+    <link rel="stylesheet" href="{% static 'soilRegenApp/css/recipe.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div id="content-wrap3">
+        <div class="container">
+            <div class="row">
+                <!-- Recipe List Column -->
+                <div class="col-md-7" id="recipe-list-panel">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <div class="row">
+                                    <h3 class="panel-title" id="recipe-title">Recipes</h3>
+                                    <form class="form-inline">
+                                        <div class="form-group">
+                                            <!-- Checkbox Column -->
+                                            <div class="checkbox">
+                                                <label id="starts-with">starts with 
+                                                    <input type="checkbox" id="searchType" name="searchType">
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <!-- Search Box Column -->
+                                            <div class="input-group" style="margin-bottom: .75em;">
+                                                <input type="text" class="form-control" id="searchBox" placeholder="Enter a search value">
+                                                <span class="input-group-addon">
+                                                    <span class="glyphicon glyphicon-remove-circle" id="clearSearch"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <!-- Button Column -->
+                                        <div class="form-group">
+                                            <button class="btn btn-success btn-block btn-new-recipe">New Recipe</button>
+                                        </div>
+                                    </form>
+                            </div>
+                        </div>
+
+                        <div class="panel-body">
+                            <div>
+                                {% if recipes %}
+                                    <div class="list-group" id="recipeList">
+                                        {% for recipe in recipes %}
+                                        <a href="#" 
+                                            class="list-group-item list-group-item-action" 
+                                            id="recipe-item"
+                                            recipe-id="{{ recipe.recipe_id }}"
+                                            recipe-name="{{ recipe.recipe_name }}" 
+                                            recipe-description="{{ recipe.recipe_description }}"
+                                            recipe-notes="{{ recipe.recipe_notes }}"
+                                            recipe-type="{{ recipe.recipe_type }}"
+                                            recipe-category="{{ recipe.recipe_category }}"
+                                        >
+                                            {{ recipe.recipe_name }} - {{ recipe.recipe_description }}
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-5" id="recipe-item-panel" hidden>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title" id="recipe-item-title">Recipe Item</h3>
+                                </div>
+                                <div class="col text-right">
+
+                                <button class="btn btn-primary btn-details-recipe"
+                                    style="cursor: pointer;">Details</button>
+
+                                <button class="btn btn-danger btn-delete-recipe"
+                                    style="cursor: pointer;">Delete</button>
+                                </div>
+
+                                </button>
+                                <div class="col-xs-12">
+                                    <p id="recipe-name" style="margin-top: 10px; margin-bottom: 2px;">Name: <span></span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <p id="recipe-description">Description: <span></span></p>
+                            <p id="recipe-type">Type: <span></span></p>
+                            <p id="recipe-category">Category: <span></span></p>
+                            <p id="recipe-notes">Notes: <span></span></p>
+                        </div>
+                    </div>
+                </div>                
+            </div>
+        </div>
+    </div>
+    <br><br><br><br>
+
+    <script>    
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchBox = document.getElementById('searchBox');
+            const recipes = document.querySelectorAll('#recipeList .list-group-item');
+            const searchType = document.getElementById('searchType');
+
+            function performSearch() {
+                const searchQuery = searchBox.value.toLowerCase();
+                const startsWith = searchType.checked;
+        
+                recipes.forEach(recipe => {
+                    const recipeName = recipe.getAttribute('data-name').toLowerCase();
+                    let matchesQuery = startsWith ? recipeName.startsWith(searchQuery) : recipeName.includes(searchQuery);
+                    recipe.style.display = matchesQuery ? '' : 'none';
+                });
+            }
+        
+            // Listen for keyup events on the search box to filter recipes
+            searchBox.addEventListener('keyup', performSearch);
+        
+            // Listen for change events on the checkbox to re-filter recipes
+            searchType.addEventListener('change', performSearch);
+        
+            // Listen for click events on the clear search icon to clear the search box and the filter
+            document.getElementById('clearSearch').addEventListener('click', function() {
+                searchBox.value = '';
+                searchType.checked = false;
+                performSearch();
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const recipeItems = document.querySelectorAll('#recipeList .list-group-item');
+            const recipeName = document.getElementById('recipe-name').querySelector('span');
+            const recipeDescription = document.getElementById('recipe-description').querySelector('span');
+            const recipeNotes = document.getElementById('recipe-notes').querySelector('span');
+            const recipeType = document.getElementById('recipe-type').querySelector('span');
+            const recipeCategory = document.getElementById('recipe-category').querySelector('span');
+            const recipeItemSection = document.getElementById('recipe-item-panel');
+
+            recipeItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const name = this.getAttribute('recipe-name');
+                    const description = this.getAttribute('recipe-description');
+                    const type = this.getAttribute('recipe-type');
+                    const category = this.getAttribute('recipe-category');
+                    const notes = this.getAttribute('recipe-notes');
+
+                    // Update the recipe item section with the selected recipe's information
+                    recipeName.textContent = name;
+                    recipeDescription.textContent = description;
+                    recipeType.textContent = type;
+                    recipeCategory.textContent = category;
+                    recipeNotes.textContent = notes;
+
+                    // Show the recipe item panel if it was hidden
+                    recipeItemSection.hidden = false; // To show it
+                });
+            });
+        });
+    </script>
+
+{% endblock %}
+
+    

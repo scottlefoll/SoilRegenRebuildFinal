@@ -2,8 +2,8 @@
 
 {% block content %}
 <div id="content-wrap2">
-  <h2>Delete Analysis Confirmation</h2>
-  <p>Are you sure you want to delete {{ analysis.description }}?</p>
+  <h2>Delete Stock Confirmation</h2>
+  <p>Are you sure you want to delete {{ stock.name }} ({{ stock.symbol }})?</p>
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}

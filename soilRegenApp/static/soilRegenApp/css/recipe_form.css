@@ -1,0 +1,191 @@
+p {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 1.15em;
+    font-weight: 550;
+    line-height: 1.43;
+}
+
+.btn {
+    margin: 3px;
+}
+
+.container {
+    width: 100%;
+}
+
+.form-group {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-left: -1em;
+    margin-bottom: 10px; /* Space between each form group */
+}
+
+.form-group select,
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%; /* Adjust based on the label width to fill the remaining space */
+    text-align: left;
+}
+
+.form-group label {
+    width: 30%; /* Adjust width as necessary */
+    text-align: right;
+    margin-right: 10px; /* Adjust as needed for spacing between label and field */
+    vertical-align: top; /* Aligns the label at the top, matching the field's position */
+}
+
+.recipe-form-buttons {
+    margin-left: 6.4em;
+    margin-top: 0;
+}
+
+.recipe-form-fields label {
+    display: inline-block;
+    text-align: right;
+    /* margin-right: 10px; Adjust as needed for spacing between label and field */
+    vertical-align: top; /* Aligns the label at the top, matching the field's position */
+    width: 30%; /* Adjust width as necessary */
+}
+
+#recipe-form-notes {
+    width: 107%;
+    margin-left: -9.3em;
+    align-items: flex-start; 
+}
+
+/* Style for the notes textarea to span full width */
+/* textarea {
+    padding-right: 0;
+    margin-right: 0;
+    margin-left: 0;
+    width: 100%;
+} */
+
+textarea {
+    width: 100%;
+    padding: 3px; 
+    /* box-sizing: border-box; */
+}
+
+#recipe-form-title {
+    margin-left: 3.1em;
+    padding-bottom: .5em;
+}
+
+/* Recipe Step CSS ---------------------------------------------------------------------------------*/
+
+p {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 1.15em;
+    font-weight: 550;
+    line-height: 1.43;
+}
+
+#btn-new-recipe-step {
+  margin: 0;
+  margin-left: 0;
+  margin-right: 1em;
+  width:min-content;
+}
+
+.form-inline {
+    padding-left: 0; /* Adjust as necessary */
+}
+
+.form-inline .form-group {
+    margin-right: 0; /* Adjust spacing between form elements */
+}
+
+.form-inline .input-group-addon {
+    cursor: pointer; /* Optional: Changes cursor to pointer when hovering over search icon */
+}
+
+.form-inline {
+    flex-shrink: 0; /* Prevents the form (and thus the button) from shrinking */
+}
+
+/* Adjust input group margin for visual alignment */
+.input-group {
+    margin-top: 10px; /* Adjust based on actual layout */
+    margin-right: .8em;
+}
+
+.panel-heading .row {
+    display: flex;
+    align-items: center; /* Vertically center the items */
+    justify-content: space-between; /* Space between title and button */
+}
+
+.panel-heading .panel-title {
+    flex: 1; /* Allows the title to grow and occupy available space */
+    margin: 0; /* Adjust or remove margin as needed for alignment */
+}
+
+.panel-title {
+    font-size: 18px;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+
+#recipe-step-btn-box {
+    width:min-content;
+}
+
+#recipe-step-title {
+    font-weight: 600;
+    margin-left: 1em;
+}
+
+#recipe-step-item-title {
+    font-weight: 600;
+    margin-left: 0;
+}
+
+#recipe-step-list-panel {
+    padding-right: 2em;
+    margin-left: 6.5em;
+}
+
+#recipe-step-item-panel {
+    padding-right: 2em;
+}
+
+/* Recipe Ingredient CSS ---------------------------------------------------------------------------------*/
+
+p {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 1.15em;
+    font-weight: 550;
+    line-height: 1.43;
+}
+
+#btn-new-recipe-ingredient {
+  margin: 0;
+  margin-left: 0;
+  margin-right: 1em;
+  width:min-content;
+}
+
+#recipe-ingredient-btn-box {
+    width:min-content;
+}
+
+#recipe-ingredient-title {
+    font-weight: 600;
+    margin-left: 1em;
+}
+
+#recipe-ingredient-item-title {
+    font-weight: 600;
+    margin-left: 0;
+}
+
+#recipe-ingredient-list-panel {
+    padding-right: 2em;
+    margin-left: 6.5em;
+}
+
+#recipe-ingredient-item-panel {
+    padding-right: 2em;
+}

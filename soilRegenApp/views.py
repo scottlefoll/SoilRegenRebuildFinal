@@ -1,3 +1,4 @@
+from django.views import View
 import requests
 import pandas as pd
 from datetime import datetime, date, timedelta
@@ -5,9 +6,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 from django.contrib.auth.views import PasswordResetView
 from django.core.mail import send_mail
+from django.core.serializers import serialize
 from django.db import transaction, IntegrityError
 from django.http.response import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -17,13 +20,12 @@ from django.utils.decorators import method_decorator
 from django.utils import dateformat, formats, timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views import View, generic
-from django.views.generic import FormView
-from .forms import CustomUserCreationForm
+from django.views.generic import FormView, ListView, DetailView, CreateView, UpdateView, DeleteView
 
-from .forms import AddFarmForm, DeleteFarmForm, RecipeForm
+from .forms import AddFarmForm, DeleteFarmForm, EditRecipeForm, CustomUserCreationForm
 from .models import Amendment, AmendmentCategory, AmendmentElement, AmendmentType, Analysis, AnalysisItem
-from .models import Country, Element, Farm, Field, Recipe, ReportItem, SoilReport, Source, SourceAmendment, UserProfile
-from .services import ReportAnalysisService, RecommendationService, AmendmentRatioService
+from .models import Country, Element, Farm, Field, Recipe, RecipeStep, RecipeIngredient, ReportItem, SoilReport, Source, SourceAmendment, UserProfile
+from .services import  AmendmentRatioService
 
 
 def index(request):
@@ -55,12 +57,6 @@ def custom_logout(request):
     logout(request)
     print("User has logged out")
     return render(request, 'logged_out.html')
-
-@login_required(login_url='/accounts/login/')
-def recipe_list_view(request):
-    """Fetches and displays a list of recipes."""
-    recipes = Recipe.objects.filter(user=request.user.profile).order_by('recipe_name')
-    return render(request, 'home.html', {'recipes': recipes})
 
 class AmendmentController(View):
     def __init__(self):
@@ -390,61 +386,178 @@ class FieldController(View):
         return redirect('field_list')
 
 
-class RecipeController(View):
+# class RecipeCreateView(CreateView):
+#     model = Recipe
+#     fields = ['recipe_name', 'recipe_description', 'recipe_category', 
+#               'recipe_type', 'recipe_application', 'recipe_practice', 
+#               'recipe_notes', 'recipe_rate', 'recipe_rate_units']
+#     template_name = 'recipe_form.html'
+#     success_url = '/some-success-url/'
+
+class RecipeListView(ListView):
+    model = Recipe
+    template_name = 'recipe.html'
+    context_object_name = 'recipes'
     
-    @method_decorator(login_required(login_url='/accounts/login/'))
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
+    def get_queryset(self):
+        # Order recipes by name
+        queryset = Recipe.objects.all().order_by('recipe_name')
+        if self.request.user.is_authenticated:
+            auth_user_id = self.request.user.id
+            for recipe in queryset:
+                recipe.is_owner = (auth_user_id == recipe.user_id)
+        return queryset
 
-    def recipe_list(self, request):
-        user_profile = UserProfile.objects.get(user=request.user)
-        recipes = Recipe.objects.filter(user=user_profile).order_by('recipe_name')
-        context = {'recipes': recipes}
-        return render(request, 'recipe_list.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Include curr_id in context if present in GET parameters
+        context['curr_id'] = self.request.GET.get('curr_id')
+        return context
 
-    def recipe_detail(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-        context = {'recipe': recipe}
-        return render(request, 'recipe_detail.html', context)
+class RecipeUpdateView(UpdateView):
+    model = Recipe
+    form_class = EditRecipeForm
+    template_name = 'recipe_form.html'
+    pk_url_kwarg = 'recipe_id'
 
-    def create_recipe(self, request):
-        if request.method == 'POST':
-            form = RecipeForm(request.POST)
-            if form.is_valid():
-                new_recipe = form.save(commit=False)
-                new_recipe.user = UserProfile.objects.get(user=request.user)
-                new_recipe.save()
-                messages.success(request, 'Recipe added successfully!')
-                return redirect('recipe_list')
-            else:
-                for error in form.errors:
-                    messages.error(request, f"{error}: {form.errors[error]}")
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)  # Get the form instance
+        # Determine the mode based on the query parameter
+        mode = self.request.GET.get('mode', '')
+        is_edit_mode = (mode == 'edit')
+
+        if not is_edit_mode:
+            # Disable all form fields if not in edit mode
+            for field_name, field in form.fields.items():
+                field.disabled = True
+
+        return form
+
+    def get_success_url(self):
+        # Make sure 'id' matches the name of your primary key field
+        recipe_id = self.kwargs['recipe_id']
+        if recipe_id is not None:
+            print("recipe_list: curr_id = ", recipe_id )
+            return reverse_lazy('recipe_list') + '?curr_id=' + str(recipe_id)
         else:
-            form = RecipeForm()
-        return render(request, 'recipe_form.html', {'form': form})
+            print("recipe_list: curr_id = None")
+            # Handle the case where for some reason the object doesn't have a primary key value
+            return reverse_lazy('recipe_list')
 
-    def update_recipe(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-        if request.method == 'POST':
-            form = RecipeForm(request.POST, instance=recipe)
-            if form.is_valid():
-                form.save()
-                messages.success(request, 'Recipe updated successfully!')
-                return redirect('recipe_detail', recipe_id=recipe.recipe_id)
-            else:
-                for error in form.errors:
-                    messages.error(request, f"{error}: {form.errors[error]}")
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        mode = self.request.GET.get('mode', '')
+        context['IsEditMode'] = (mode == 'edit')
+        context['recipe_id'] = self.kwargs.get('recipe_id', 'defaultID')
+        context['recipe_steps'] = self.object.recipestep_set.all() if self.object else []
+        
+        if self.object:  # Ensures we have a recipe object
+            recipe_ingredients = self.object.recipeingredient_set.all().prefetch_related(
+                'ingredient',  # Ensures Ingredient data is fetched
+                'unit',        # Ensures Unit data is fetched
+                'source',      # Ensures Source data is fetched
+                'ingredient__practice',  # Accessing further related data
+                'ingredient__ingredient_category',
+                'ingredient__ingredient_type'
+            )
+            context['recipe_ingredients'] = recipe_ingredients
         else:
-            form = RecipeForm(instance=recipe)
-        return render(request, 'recipe_form.html', {'form': form, 'recipe': recipe})
+            context['recipe_ingredients'] = RecipeIngredient.objects.none()
+        
+        return context
+    
+class RecipeDeleteView(DeleteView):
+    model = Recipe
+    template_name = 'recipe_confirm_delete.html'
+    success_url = reverse_lazy('recipe_list') # Adjust as necessary
 
-    def delete_recipe(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-        recipe.delete()
-        messages.success(request, 'Recipe deleted successfully!')
-        return redirect('recipe_list')
+    # def delete(self, request, *args, **kwargs):
+    #     messages.success(request, 'Recipe was deleted successfully!')
+    #     return super(RecipeDeleteView, self).delete(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        messages.success(request, 'The recipe was successfully deleted!')
+        return super(RecipeDeleteView, self).post(request, *args, **kwargs)
     
+    # def delete(self, request, *args, **kwargs):
+    #     response = super(RecipeDeleteView, self).delete(request, *args, **kwargs)
+    #     print(list(messages.get_messages(request)))  # Print messages for debugging
+    #     return response
+
+
+# class RecipeController(View):
     
+    # def get(self, request, *args, **kwargs):
+    #     if 'recipe_id' in kwargs:
+    #         return self.update_recipe(request, kwargs['recipe_id'])
+    #     else:
+    #         return self.recipe_list(request)
+        
+    # def recipe_list(self, request):
+    #     # Fetch all recipes from the database and order them by name
+    #     recipes = Recipe.objects.all().order_by('recipe_name')
+    #     # Check if the current user is the owner of the recipe
+    #     # and pass that information to the template for conditional display of edit/delete options
+    #     if request.user.is_authenticated:
+    #         auth_user_id = request.user.id
+    #         for recipe in recipes:
+    #             # Temporarily add an attribute to indicate ownership
+    #             recipe.is_owner = (auth_user_id == recipe.user_id)
+
+    #     context = {'recipes': recipes}
+    #     return render(request, 'recipe.html', context)
+
+    
+    # def recipe_detail(self, request, recipe_id):
+    #     recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+    #     # check if the current user is the owner of the recipe
+    #     # and pass that information to the template for conditional display of edit/delete options
+    #     is_owner = False
+    #     if request.user.is_authenticated and recipe.user == request.user.userprofile:
+    #         is_owner = True
+    #     context = {'recipe': recipe}
+    #     return render(request, 'recipe_detail.html', context)
+
+    # @method_decorator(login_required(login_url='/accounts/login/'))
+    # def create_recipe(self, request):
+    #     if request.method == 'POST':
+    #         form = EditRecipeForm(request.POST)
+    #         if form.is_valid():
+    #             new_recipe = form.save(commit=False)
+    #             new_recipe.user = UserProfile.objects.get(user=request.user)
+    #             new_recipe.save()
+    #             messages.success(request, 'Recipe added successfully!')
+    #             return redirect('recipe_list')
+    #         else:
+    #             for error in form.errors:
+    #                 messages.error(request, f"{error}: {form.errors[error]}")
+    #     else:
+    #         form = EditRecipeForm()
+    #     return render(request, 'recipe_form.html', {'form': form})
+
+    # @method_decorator(login_required(login_url='/accounts/login/'))
+    # def update_recipe(self, request, recipe_id):
+    #     recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+    #     if request.method == 'POST':
+    #         form = EditRecipeForm(request.POST, instance=recipe)
+    #         if form.is_valid():
+    #             form.save()
+    #             messages.success(request, 'Recipe updated successfully!')
+    #             return redirect('recipe_detail', recipe_id=recipe.recipe_id)
+    #         else:
+    #             for error in form.errors:
+    #                 messages.error(request, f"{error}: {form.errors[error]}")
+    #     else:
+    #         form = EditRecipeForm(instance=recipe)
+    #     return render(request, 'recipe_form.html', {'form': form, 'recipe': recipe})
+
+    # @method_decorator(login_required(login_url='/accounts/login/'))
+    # def delete_recipe(self, request, recipe_id):
+    #     recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+    #     recipe.delete()
+    #     messages.success(request, 'Recipe deleted successfully!')
+    #     return redirect('recipe.html')
+
 class ReportItemController(View):
     def __init__(self):
         self.api_key = settings.API_KEY
@@ -512,12 +625,6 @@ class ReportItemController(View):
         return redirect('report_item_list')
 
 
-class SignUpView(generic.CreateView):
-    form_class = CustomUserCreationForm
-    success_url = reverse_lazy("login")
-    template_name = "registration/signup.html"
-
-
 class ResetView(PasswordResetView):
     form_class = PasswordResetForm
     template_name = "registration/password_reset.html"
@@ -527,6 +634,12 @@ class ResetView(PasswordResetView):
     def form_valid(self, form):
         print("Sending email")
         return super().form_valid(form)
+    
+    
+class SignUpView(generic.CreateView):
+    form_class = CustomUserCreationForm
+    success_url = reverse_lazy("login")
+    template_name = "registration/signup.html"
 
 
 class SoilReportController(View):
