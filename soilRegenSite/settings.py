@@ -17,13 +17,14 @@ import os
 load_dotenv()
 api_key = os.getenv('API_KEY')
 secret_key = os.getenv('SECRET_KEY')
-database_url = os.getenv('DATABASE_URL')
-db_user = os.getenv('DB_USER')
-db_host = os.getenv('DB_HOST')
+
 db_name = os.getenv('DB_NAME')
-db_port = os.getenv('DB_PORT')
-db_charset = os.getenv('DB_CHARSET')
+db_user = os.getenv('DB_USER')
 db_password = os.getenv('DB_PASSWORD')
+db_host = os.getenv('DB_HOST')
+db_port = os.getenv('DB_PORT')
+
+db_charset = os.getenv('DB_CHARSET')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

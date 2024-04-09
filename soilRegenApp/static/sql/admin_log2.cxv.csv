@@ -1,8 +1,0 @@
-"id";"action_time";"object_id";"object_repr";"action_flag";"change_message";"content_type_id";"user_id"
-1;"2024-03-20 13:30:34.592064";"1";"scottlefoll";2;"[{""changed"": {""fields"": [""Active""]}}]";4;4
-2;"2024-03-20 13:31:23.316477";"5";"slefoll7";1;"[{""added"": {}}]";4;4
-3;"2024-03-20 13:31:48.024966";"6";"scottlefoll@gmail.com";1;"[{""added"": {}}]";4;4
-4;"2024-03-20 13:32:06.769826";"6";"scottlefoll@gmail.com";2;"[{""changed"": {""fields"": [""Staff status"", ""Superuser status""]}}]";4;4
-5;"2024-03-20 13:32:15.844539";"5";"slefoll7";2;"[{""changed"": {""fields"": [""Staff status"", ""Superuser status""]}}]";4;4
-6;"2024-03-20 13:34:30.329461";"1";"scottlefoll";2;"[{""changed"": {""fields"": [""password""]}}]";4;4
-7;"2024-03-20 13:34:39.349227";"1";"scottlefoll";2;"[{""changed"": {""fields"": [""Active""]}}]";4;4
