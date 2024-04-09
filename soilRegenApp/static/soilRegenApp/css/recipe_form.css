@@ -18,11 +18,16 @@ p {
     justify-content: flex-start;
     align-items: center;
     margin-left: -1em;
-    margin-bottom: 10px; /* Space between each form group */
+    margin-bottom: 0; /* Space between each form group */
 }
 
 .form-group select,
-.form-group input[type="text"],
+.form-group input[type="text"] {
+    width: 100%; /* Adjust based on the label width to fill the remaining space */
+    text-align: left;
+    /* margin-bottom: 2em; */
+}
+
 .form-group textarea {
     width: 100%; /* Adjust based on the label width to fill the remaining space */
     text-align: left;
@@ -33,6 +38,8 @@ p {
     text-align: right;
     margin-right: 10px; /* Adjust as needed for spacing between label and field */
     vertical-align: top; /* Aligns the label at the top, matching the field's position */
+    margin-top: .5em;
+    margin-bottom: 0;
 }
 
 .recipe-form-buttons {
@@ -44,33 +51,74 @@ p {
     display: inline-block;
     text-align: right;
     /* margin-right: 10px; Adjust as needed for spacing between label and field */
-    vertical-align: top; /* Aligns the label at the top, matching the field's position */
+    vertical-align: center; /* Aligns the label at the top, matching the field's position */
     width: 30%; /* Adjust width as necessary */
 }
+
+.recipe-form-fields .form-group {
+    margin-bottom: 0;
+}
+
+.recipe-form-fields .form-control, .recipe-form-fields input, .recipe-form-fields select, .recipe-form-fields label {
+    height: 2em;
+    margin-bottom: .5em;
+}
+
+/* .recipe-form-fields label {
+    margin-bottom: 2em;
+} */
 
 #recipe-form-notes {
     width: 107%;
     margin-left: -9.3em;
-    align-items: flex-start; 
+    align-items: flex-start;
 }
-
-/* Style for the notes textarea to span full width */
-/* textarea {
-    padding-right: 0;
-    margin-right: 0;
-    margin-left: 0;
-    width: 100%;
-} */
 
 textarea {
     width: 100%;
-    padding: 3px; 
+    padding: 3px;
     /* box-sizing: border-box; */
 }
 
 #recipe-form-title {
     margin-left: 3.1em;
     padding-bottom: .5em;
+    font-weight: 600;
+}
+
+#recipe-form-unit{
+    width: 50%;
+    margin-left: 3.5em;
+}
+
+#id-recipe-category-select {
+    font-weight: 600;
+    color:darkgreen;
+}
+
+#id-recipe-type-select {
+    font-weight: 600 !important;
+    color:darkgreen !important;
+}
+
+#id-practice-select {
+    font-weight: 600;
+    color:darkgreen;
+}
+
+#id-application-select {
+    font-weight: 600;
+    color:darkgreen;
+}
+
+#id-unit-select {
+    font-weight: 600;
+    color:darkgreen;
+}
+
+select :disabled {
+    font-weight: 600;
+    color:darkgreen;
 }
 
 /* Recipe Step CSS ---------------------------------------------------------------------------------*/
@@ -87,6 +135,13 @@ p {
   margin-left: 0;
   margin-right: 1em;
   width:min-content;
+}
+
+#btn-delete-recipe-step {
+    margin: 0;
+    margin-left: 0;
+    margin-right: 1em;
+    width:min-content;
 }
 
 .form-inline {
@@ -132,14 +187,26 @@ p {
     width:min-content;
 }
 
+#recipe-detail-btn-box {
+    margin-top: .5em;
+    margin-left: 6.25em;
+}
+
 #recipe-step-title {
     font-weight: 600;
     margin-left: 1em;
 }
 
+#recipe-step-form-title {
+    font-weight: 600;
+    margin-left: 3.75em;
+    margin-bottom: 1em;
+}
+
 #recipe-step-item-title {
     font-weight: 600;
-    margin-left: 0;
+    margin-left: 1em;
+    padding-left: 0;
 }
 
 #recipe-step-list-panel {
@@ -149,9 +216,13 @@ p {
 
 #recipe-step-item-panel {
     padding-right: 2em;
+    margin-left: 0;
+    margin-top: -.75em;
 }
 
-/* Recipe Ingredient CSS ---------------------------------------------------------------------------------*/
+#recipe-step-item-edit-panel {
+    padding-right: 2em;
+}
 
 p {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -167,6 +238,20 @@ p {
   width:min-content;
 }
 
+#btn-delete-recipe-ingredient {
+    margin: 0;
+    margin-left: 0;
+    margin-right: 1em;
+    width:min-content;
+}
+
+.ingredient-related-field {
+    margin-top: -.5em;
+}
+
+.ingredient-related {
+    margin-left: -4.3em;
+}
 #recipe-ingredient-btn-box {
     width:min-content;
 }
@@ -178,7 +263,7 @@ p {
 
 #recipe-ingredient-item-title {
     font-weight: 600;
-    margin-left: 0;
+    margin-left: 1em;
 }
 
 #recipe-ingredient-list-panel {
@@ -188,4 +273,35 @@ p {
 
 #recipe-ingredient-item-panel {
     padding-right: 2em;
+    margin-left: 0;
+    margin-top: -.75em;
+}
+
+#recipe-ingredient-title {
+    font-weight: 600;
+    margin-left: 1em;
+}
+
+#recipe-ingredient-form-title {
+    font-weight: 600;
+    margin-left: 3.75em;
+    margin-bottom: 1em;
+}
+
+#id_recipe_ingredient_ingredient {
+    font-weight: 600;
+    padding-left: 0;
+    color:darkgreen;
+}
+
+#id_recipe_ingredient_quantity {
+    font-weight: 600;
+    padding-left: 3px;
+    color:darkgreen;
+}
+
+#id_recipe_ingredient_unit {
+    font-weight: 600;
+    padding-left: 0;
+    color:darkgreen;
 }

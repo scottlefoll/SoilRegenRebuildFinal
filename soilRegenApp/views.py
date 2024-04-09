@@ -1,6 +1,7 @@
 from django.views import View
 import requests
 import pandas as pd
+import json
 from datetime import datetime, date, timedelta
 from django.conf import settings
 from django.contrib import messages
@@ -11,9 +12,13 @@ from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 from django.contrib.auth.views import PasswordResetView
 from django.core.mail import send_mail
 from django.core.serializers import serialize
+from django.core import serializers
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction, IntegrityError
-from django.http.response import HttpResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.forms.models import model_to_dict
+from django.http import JsonResponse
+from django.http.response import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.template import loader
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
@@ -21,22 +26,14 @@ from django.utils import dateformat, formats, timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views import View, generic
 from django.views.generic import FormView, ListView, DetailView, CreateView, UpdateView, DeleteView
-
-from .forms import AddFarmForm, DeleteFarmForm, EditRecipeForm, CustomUserCreationForm
+from .forms import AddFarmForm, DeleteFarmForm, EditRecipeForm, CustomUserCreationForm, RecipeStepForm, RecipeIngredientForm
 from .models import Amendment, AmendmentCategory, AmendmentElement, AmendmentType, Analysis, AnalysisItem
-from .models import Country, Element, Farm, Field, Recipe, RecipeStep, RecipeIngredient, ReportItem, SoilReport, Source, SourceAmendment, UserProfile
+from .models import Country, Element, Farm, Field, Ingredient, Recipe, RecipeStep, RecipeIngredient, ReportItem, RecipeStep, SoilReport, Source, SourceAmendment, UserProfile
 from .services import  AmendmentRatioService
 
 
-def index(request):
-    return render(request, 'home.html')
-
 # views for static pages
 
-def home_view(request):
-    """Render the home page."""
-    print("Home view is being called")
-    return render(request, 'home.html')
 
 def about_view(request):
     """Render the about page."""
@@ -48,15 +45,114 @@ def contact_view(request):
     print("Contact view is being called")
     return render(request, 'contact.html')
 
+def custom_logout(request):
+    logout(request)
+    print("User has logged out")
+    return render(request, 'logged_out.html')
+
+def get_ingredient(request, ingredient_id):
+    try:
+        ingredient = Ingredient.objects.select_related(
+            'practice', 
+            'ingredient_category', 
+            'ingredient_type'
+        ).get(pk=ingredient_id)
+
+        ingredient_dict = model_to_dict(ingredient)
+        # Manually include the related objects' information
+        ingredient_dict['practice'] = str(ingredient.practice) if ingredient.practice else None
+        ingredient_dict['ingredient_category'] = str(ingredient.ingredient_category) if ingredient.ingredient_category else None
+        ingredient_dict['ingredient_type'] = str(ingredient.ingredient_type) if ingredient.ingredient_type else None
+        return JsonResponse(ingredient_dict)
+    except Ingredient.DoesNotExist:
+        return JsonResponse({'error': 'Ingredient not found'}, status=404)
+    
+def get_recipe_step_details(request, recipe_step_id):
+    try:
+        steps = RecipeStep.objects.get(recipe_step_id=recipe_step_id)
+        data = {
+            'name': steps.recipe_step_name,
+            'number': steps.recipe_step_number,
+            'description': steps.recipe_step_description,
+            'notes': steps.recipe_step_notes,
+        }
+        return JsonResponse(data)
+    except RecipeStep.DoesNotExist:
+        return JsonResponse({'error': 'Recipe step not found'}, status=404)
+
+def get_recipe_ingredient_details(request, recipe_ingredient_id):
+    try:
+        ingredients = RecipeIngredient.objects.get(recipe_ingredient_id=recipe_ingredient_id)
+         
+        data = {
+            'name': ingredients.recipe_step_name,
+            'number': ingredients.recipe_step_number,
+            'description': ingredients.recipe_step_description,
+            'notes': ingredients.recipe_step_notes,
+        }
+        return JsonResponse(data)
+    except RecipeStep.DoesNotExist:
+        return JsonResponse({'error': 'Recipe step not found'}, status=404)
+
+def get_ingredient_related(request, ingredient_id):
+    try:
+        ingredient = Ingredient.objects.select_related(
+            'practice', 'ingredient_category', 'ingredient_type'
+        ).get(pk=ingredient_id)
+
+        # Construct the JSON response
+        ingredient_data = {
+            'ingredient_id': ingredient.id,
+            'ingredient_name': ingredient.ingredient_name,
+            'ingredient_description': ingredient.ingredient_description,
+            'category_name': ingredient.ingredient_category.category_name,
+            'type_name': ingredient.ingredient_type.ingredient_type_name,
+            'practice_name': ingredient.practice.practice_name,
+        }
+
+        return JsonResponse(ingredient_data)
+    except Ingredient.DoesNotExist:
+        return JsonResponse({'error': 'Ingredient not found'}, status=404)
+    
+def home_view(request):
+    """Render the home page."""
+    print("Home view is being called")
+    return render(request, 'home.html')
+
+def index(request):
+    return render(request, 'home.html')
+
 def profile_view(request):
     """Render the profile page."""
     print("Profile view is being called")
     return render(request, 'profile.html')
 
-def custom_logout(request):
-    logout(request)
-    print("User has logged out")
-    return render(request, 'logged_out.html')
+@csrf_exempt
+def save_steps_batch(request):
+    if request.method == 'PATCH':
+        try:
+            steps_data = json.loads(request.body)
+            for step_data in steps_data:
+                recipe_step_id = step_data.get('recipe_step_id')
+                if recipe_step_id:
+                    # Update existing step
+                    step = RecipeStep.objects.get(pk=recipe_step_id)
+                else:
+                    # Create new step
+                    step = RecipeStep()
+
+                step.recipe_step_name = step_data.get('recipe_step_name')
+                step.recipe_step_number = step_data.get('recipe_step_number')
+                step.recipe_step_description = step_data.get('recipe_step_description')
+                step.recipe_step_notes = step_data.get('recipe_step_notes')
+                # Make sure to set the recipe as well
+                step.recipe_id = step_data.get('recipe_id')
+                step.save()
+            return JsonResponse({'status': 'Step details updated successfully', 'updated_steps': step_data})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request'}, status=400)
 
 class AmendmentController(View):
     def __init__(self):
@@ -401,7 +497,8 @@ class RecipeListView(ListView):
     
     def get_queryset(self):
         # Order recipes by name
-        queryset = Recipe.objects.all().order_by('recipe_name')
+        # queryset = Recipe.objects.all().order_by('recipe_name')
+        queryset = Recipe.objects.select_related('practice', 'application', 'unit').order_by('recipe_name')
         if self.request.user.is_authenticated:
             auth_user_id = self.request.user.id
             for recipe in queryset:
@@ -410,7 +507,7 @@ class RecipeListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Include curr_id in context if present in GET parameters
+        # Include curr_id in context to highlight the current recipe
         context['curr_id'] = self.request.GET.get('curr_id')
         return context
 
@@ -422,9 +519,10 @@ class RecipeUpdateView(UpdateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)  # Get the form instance
-        # Determine the mode based on the query parameter
         mode = self.request.GET.get('mode', '')
         is_edit_mode = (mode == 'edit')
+        recipe_steps = RecipeStep.objects.filter(recipe_id=self.kwargs.get('recipe_id')).order_by('recipe_step_number')
+        max_step_num = recipe_steps.last().recipe_step_number if recipe_steps.exists() else 0
 
         if not is_edit_mode:
             # Disable all form fields if not in edit mode
@@ -436,36 +534,43 @@ class RecipeUpdateView(UpdateView):
     def get_success_url(self):
         # Make sure 'id' matches the name of your primary key field
         recipe_id = self.kwargs['recipe_id']
-        if recipe_id is not None:
-            print("recipe_list: curr_id = ", recipe_id )
-            return reverse_lazy('recipe_list') + '?curr_id=' + str(recipe_id)
-        else:
-            print("recipe_list: curr_id = None")
-            # Handle the case where for some reason the object doesn't have a primary key value
-            return reverse_lazy('recipe_list')
+        return reverse_lazy('recipe_list') + '?curr_id=' + str(recipe_id)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         mode = self.request.GET.get('mode', '')
         context['IsEditMode'] = (mode == 'edit')
         context['recipe_id'] = self.kwargs.get('recipe_id', 'defaultID')
-        context['recipe_steps'] = self.object.recipestep_set.all() if self.object else []
-        
-        if self.object:  # Ensures we have a recipe object
-            recipe_ingredients = self.object.recipeingredient_set.all().prefetch_related(
-                'ingredient',  # Ensures Ingredient data is fetched
-                'unit',        # Ensures Unit data is fetched
-                'source',      # Ensures Source data is fetched
-                'ingredient__practice',  # Accessing further related data
-                'ingredient__ingredient_category',
-                'ingredient__ingredient_type'
-            )
-            context['recipe_ingredients'] = recipe_ingredients
-        else:
-            context['recipe_ingredients'] = RecipeIngredient.objects.none()
-        
-        return context
+        context['step_form'] = RecipeStepForm()
+        context['ingredient_form'] = RecipeIngredientForm()
     
+        if self.object:  # Ensures we have a recipe object
+            recipe_steps = self.object.recipestep_set.order_by('recipe_step_number').all()
+            context['recipe_steps'] = recipe_steps
+            first_step = context['recipe_steps'].first()
+            context['step_form'] = RecipeStepForm(instance=first_step)
+
+            # Serialize recipe ingredients to JSON
+            # steps_json = serializers.serialize('json', recipe_steps)
+            steps_json = json.dumps(list(recipe_steps.values()), cls=DjangoJSONEncoder)
+            context['steps_json'] = steps_json
+            
+            # Disable step form fields if not in edit mode
+            if not context['IsEditMode']:
+                for field_name, field in context['step_form'].fields.items():
+                    field.disabled = True
+    
+            # Disable ingredient form fields if not in edit mode
+            if not context['IsEditMode']:
+                for field_name, field in context['ingredient_form'].fields.items():
+                    field.disabled = True
+        
+        else:
+            context['recipe_steps'] = []
+            # context['recipe_ingredients'] = []
+
+        return context
+
 class RecipeDeleteView(DeleteView):
     model = Recipe
     template_name = 'recipe_confirm_delete.html'
@@ -484,79 +589,6 @@ class RecipeDeleteView(DeleteView):
     #     print(list(messages.get_messages(request)))  # Print messages for debugging
     #     return response
 
-
-# class RecipeController(View):
-    
-    # def get(self, request, *args, **kwargs):
-    #     if 'recipe_id' in kwargs:
-    #         return self.update_recipe(request, kwargs['recipe_id'])
-    #     else:
-    #         return self.recipe_list(request)
-        
-    # def recipe_list(self, request):
-    #     # Fetch all recipes from the database and order them by name
-    #     recipes = Recipe.objects.all().order_by('recipe_name')
-    #     # Check if the current user is the owner of the recipe
-    #     # and pass that information to the template for conditional display of edit/delete options
-    #     if request.user.is_authenticated:
-    #         auth_user_id = request.user.id
-    #         for recipe in recipes:
-    #             # Temporarily add an attribute to indicate ownership
-    #             recipe.is_owner = (auth_user_id == recipe.user_id)
-
-    #     context = {'recipes': recipes}
-    #     return render(request, 'recipe.html', context)
-
-    
-    # def recipe_detail(self, request, recipe_id):
-    #     recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-    #     # check if the current user is the owner of the recipe
-    #     # and pass that information to the template for conditional display of edit/delete options
-    #     is_owner = False
-    #     if request.user.is_authenticated and recipe.user == request.user.userprofile:
-    #         is_owner = True
-    #     context = {'recipe': recipe}
-    #     return render(request, 'recipe_detail.html', context)
-
-    # @method_decorator(login_required(login_url='/accounts/login/'))
-    # def create_recipe(self, request):
-    #     if request.method == 'POST':
-    #         form = EditRecipeForm(request.POST)
-    #         if form.is_valid():
-    #             new_recipe = form.save(commit=False)
-    #             new_recipe.user = UserProfile.objects.get(user=request.user)
-    #             new_recipe.save()
-    #             messages.success(request, 'Recipe added successfully!')
-    #             return redirect('recipe_list')
-    #         else:
-    #             for error in form.errors:
-    #                 messages.error(request, f"{error}: {form.errors[error]}")
-    #     else:
-    #         form = EditRecipeForm()
-    #     return render(request, 'recipe_form.html', {'form': form})
-
-    # @method_decorator(login_required(login_url='/accounts/login/'))
-    # def update_recipe(self, request, recipe_id):
-    #     recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-    #     if request.method == 'POST':
-    #         form = EditRecipeForm(request.POST, instance=recipe)
-    #         if form.is_valid():
-    #             form.save()
-    #             messages.success(request, 'Recipe updated successfully!')
-    #             return redirect('recipe_detail', recipe_id=recipe.recipe_id)
-    #         else:
-    #             for error in form.errors:
-    #                 messages.error(request, f"{error}: {form.errors[error]}")
-    #     else:
-    #         form = EditRecipeForm(instance=recipe)
-    #     return render(request, 'recipe_form.html', {'form': form, 'recipe': recipe})
-
-    # @method_decorator(login_required(login_url='/accounts/login/'))
-    # def delete_recipe(self, request, recipe_id):
-    #     recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-    #     recipe.delete()
-    #     messages.success(request, 'Recipe deleted successfully!')
-    #     return redirect('recipe.html')
 
 class ReportItemController(View):
     def __init__(self):
@@ -634,8 +666,8 @@ class ResetView(PasswordResetView):
     def form_valid(self, form):
         print("Sending email")
         return super().form_valid(form)
-    
-    
+
+
 class SignUpView(generic.CreateView):
     form_class = CustomUserCreationForm
     success_url = reverse_lazy("login")
@@ -659,7 +691,7 @@ class SoilReportController(View):
     def report_detail(request, report_id):
         try:
             report = Report.objects.get(report_id=report_id)
-            report_fields = report.field_set.order_by('report_date')  
+            report_fields = report.field_set.order_by('report_date')
         except Report.DoesNotExist:
             messages.error(request, f"Report ID {report_id} does not exist")
             return redirect('report_list')

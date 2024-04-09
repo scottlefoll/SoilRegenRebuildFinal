@@ -51,17 +51,18 @@
                                     <div class="list-group" id="recipeList">
                                         {% for recipe in recipes %}
                                             <a href="#" 
-                                                class="list-group-item list-group-item-action" 
+                                                class="list-group-item list-group-item-action {% if recipe.recipe_id|stringformat:'s' == curr_id %}active{% endif %}"
                                                 id="recipe-item"
                                                 data-id="{{ recipe.recipe_id }}"
-                                                data-name="{{ recipe.recipe_name }}" 
+                                                data-name="{{ recipe.recipe_name }}"
                                                 data-description="{{ recipe.recipe_description }}"
                                                 data-notes="{{ recipe.recipe_notes }}"
                                                 data-type="{{ recipe.recipe_type }}"
-                                                data-application="{{ recipe.recipe_application }}"
-                                                data-practice="{{ recipe.recipe_practice }}"
+                                                data-application="{{ recipe.application.application_name }}"
+                                                data-practice="{{ recipe.practice.practice_name }}"
+                                                data-practice-description="{{ recipe.practice.practice_description }}"
                                                 data-rate="{{ recipe.recipe_rate }}"
-                                                data-rate-units="{{ recipe.recipe_rate_units }}"
+                                                data-rate-units="{{ recipe.unit.unit_name }}"
                                                 data-category="{{ recipe.recipe_category }}"
                                                 data-is-owner="{{ recipe.is_owner }}"
                                             >
@@ -122,6 +123,7 @@
     <br><br><br><br>
 
     <script>
+        // Script to search and filter recipes by name
         document.addEventListener('DOMContentLoaded', function() {
             const searchBox = document.getElementById('searchBox');
             const recipes = document.querySelectorAll('#recipeList .list-group-item');
@@ -154,6 +156,7 @@
     </script>
 
     <script type="text/javascript">
+        // Script to handle the new recipe button click
         // Directly generate the base URLs for editing and deleting without the placeholder
         var editBaseUrl = "{% url 'edit_recipe' 0 %}".replace('/0/', '/');
         var detailBaseUrl = "{% url 'recipe_detail' 0 %}".replace('/0/', '/');
@@ -162,6 +165,7 @@
 
     {% verbatim %}
     <script>
+        // Script to handle the recipe list item click event
         document.addEventListener('DOMContentLoaded', function() {
             const recipeItems = document.querySelectorAll('#recipeList .list-group-item');
             const recipeId = document.getElementById('recipe-id').querySelector('span');
@@ -218,7 +222,7 @@
                         recipeEditBtn.style.display = 'none';
                     }
 
-                    recipeDetailBtn.onclick = function() { window.location.href = detailBaseUrl + id  + '?mode=detail';};
+                    recipeDetailBtn.onclick = function() { window.location.href = detailBaseUrl + id + '?mode=detail&curr_id=' + id; };
                     // Show the recipe item panel if it was hidden
                     recipeItemSection.hidden = false; // To show it
                 });
@@ -228,31 +232,25 @@
     {% endverbatim %}
     
     <script>
+        // Script to retrieve the curr_id query parameter
         // check the URL for a curr_id query parameter
         const urlParams = new URLSearchParams(window.location.search);
         const curr_id = urlParams.get('curr_id');
-        console.log("urlParams = ", urlParams, "curr_id = ", curr_id);
     </script>
 
-    {% if curr_id %}
-        <script>
-            console.log("Simulate click script loaded!");
-            document.addEventListener('DOMContentLoaded', function() {
-                // Convert curr_id to string to ensure proper comparison
-                console.log("DOMContentLoaded event fired!")
-                var currId = "{{ curr_id }}";
-                console.log("Query curr_id = ", currId);
-                var recipeItems = document.querySelectorAll('[data-id]');
-                console.log(recipeItems);
-                recipeItems.forEach(function(item) {
-                    console.log("For each: Query currId = ", curr_id, "RecipeItems(item.id) = ", item.getAttribute('data-id'));
-                    if (item.getAttribute('data-id') === currId) {
-                        console.log("Clicking item: ", item);
-                        item.click();  // Simulate click
-                    }
-                });
+    <script>
+        // Script to simulate a click on the recipe item with the curr_id
+        //alert("Simulate click script loaded!");
+        document.addEventListener('DOMContentLoaded', function() {
+            // Convert curr_id to string to ensure proper comparison
+            var currId = "{{ curr_id }}";
+            var recipeItems = document.querySelectorAll('[data-id]');
+            recipeItems.forEach(function(item) {
+                if (item.getAttribute('data-id') === currId) {
+                    item.click();  // Simulate click
+                }
             });
-        </script>
-    {% endif %}
+        });
+    </script>
 
 {% endblock %}

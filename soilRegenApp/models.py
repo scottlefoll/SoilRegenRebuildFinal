@@ -212,16 +212,20 @@ class Unit(models.Model):
     
     class Meta:
 
-        db_table = 'unit_type'
+        db_table = 'unit'
         
         
 class Ingredient(models.Model):
+    
     ingredient_id = models.AutoField(primary_key=True)
     ingredient_name = models.CharField(max_length=45, blank=True, default='')
     ingredient_description = models.CharField(max_length=100, blank=True, default='')
     practice = models.ForeignKey('Practice', models.DO_NOTHING, blank=True, default='')
     ingredient_category = models.ForeignKey('IngredientCategory', models.DO_NOTHING, blank=True, default='')
     ingredient_type = models.ForeignKey('IngredientType', models.DO_NOTHING, blank=True, default='')
+
+    def __str__(self):
+        return self.ingredient_name
 
     class Meta:
 
@@ -233,7 +237,7 @@ class IngredientCategory(models.Model):
     category_name = models.CharField(max_length=45, blank=True, default='')
 
     def __str__(self):
-        return self.unit_name
+        return self.category_name
     
     class Meta:
 
@@ -245,7 +249,7 @@ class IngredientType(models.Model):
     ingredient_type_name = models.CharField(max_length=45, blank=True, default='')
 
     def __str__(self):
-        return self.unit_name
+        return self.ingredient_type_name
     
     class Meta:
 
@@ -279,10 +283,10 @@ class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(Ingredient, models.DO_NOTHING, db_index=True)
 
     class Meta:
-        
+
         db_table = 'recipe_ingredient'
-        
-        
+
+
 class RecipeStep(models.Model):
     recipe_step_id = models.AutoField(primary_key=True)
     recipe_step_number = models.IntegerField(blank=True, default='0')
@@ -327,7 +331,7 @@ class Source(models.Model):
     notes = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return self.unit_name
+        return self.name
     
     class Meta:
         

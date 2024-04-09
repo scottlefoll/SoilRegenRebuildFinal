@@ -20,11 +20,25 @@
         <div class="container mt-4">
             <form method="post" class="recipe-form">
                 {% csrf_token %}
-                {% if IsEditMode %}
-                    <h2 id="recipe-form-title">Edit Recipe:</h2>
-                {% else %}
-                    <h2 id="recipe-form-title">Recipe Detail:</h2>
-                {% endif %}
+                <div class="row align-items-center"> <!-- Ensure title and buttons are aligned in the middle -->
+                    <div class="col-md-8">
+                        <h2 id="recipe-form-title">
+                            {% if IsEditMode %}Edit Recipe{% else %}Recipe Detail{% endif %}
+                        </h2>
+                    </div>
+                    <div class="col-md-4 text-md-right"> <!-- Use text-md-right to align buttons to the right on medium screens and up -->
+                        {% if IsEditMode %}
+                            <button type="submit" name="submitBtn" class="btn btn-primary">Save</button>
+                            <button type="button" name="cancelBtn" class="btn btn-danger" onclick="window.location.href='{% url 'recipe_list' %}?curr_id={{ recipe_id }}'">Cancel</button>
+                            <div id="isEditMode" hidden>true</div>
+                        {% else %}
+                            <button type="button" name="editBtn" class="btn btn-primary" onclick="window.location.href='?mode=edit'">Edit</button>
+                            <button type="button" name="recipeListBtn" class="btn btn-success" onclick="window.location.href='{% url 'recipe_list' %}?curr_id={{ recipe_id }}'">Recipe List</button>
+                            <div id="isEditMode" hidden>false</div>
+                        {% endif %}
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-md-6 recipe-form-fields">
                         <div class="form-group">
@@ -33,7 +47,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="{{ form.recipe_description.id_for_label }}">Recipe Name:</label>
+                            <label for="{{ form.recipe_description.id_for_label }}">Description:</label>
                             {{ form.recipe_description }}
                         </div>
 
@@ -50,23 +64,23 @@
                     <div class="col-md-6 recipe-form-fields">
 
                         <div class="form-group">
-                            <label for="{{ form.application.id_for_label }}">Recipe Name:</label>
-                            {{ form.application }}
-                        </div>
-
-                        <div class="form-group">
-                            <label for="{{ form.practice.id_for_label }}">Recipe Name:</label>
+                            <label for="{{ form.practice.id_for_label }}">Practice:</label>
                             {{ form.practice }}
                         </div>
 
                         <div class="form-group">
-                            <label for="{{ form.recipe_rate.id_for_label }}">Rate:</label>
-                            {{ form.recipe_rate }}
+                            <label for="{{ form.application.id_for_label }}">Application:</label>
+                            {{ form.application }}
                         </div>
 
                         <div class="form-group">
+                            <label for="{{ form.recipe_rate.id_for_label }} ">Rate:</label>
+                            {{ form.recipe_rate }}
+                        </div>
+
+                        <div class="form-group" id="recipe-form-unit">
                             <label for="{{ form.unit_id.id_for_label }}">Units:</label>
-                            {{ form.unit }}
+                            {{ form.unit }} <span style="margin-left: 5px; margin-top: -.5em; white-space: nowrap;">per acre.</span>
                         </div>
                     </div>
 
@@ -78,23 +92,512 @@
                     </div>
                 </div>
 
-                
-                {% if IsEditMode %}
-                    <div class="row">
-                        <div class="col-md-6 recipe-form-buttons">
-                            <button type="submit" name="submitBtn" class="btn btn-primary">Submit</button>
-                            <button type="button" name="cancelBtn" class="btn btn-danger" onclick="window.location.href='{% url 'recipe_list' %}?curr_id={{ recipe_id }}'">Cancel</button>                            
+                <br><br>
+                <div class="row">
+                    <!-- Recipe Step List Column -->
+                    <div class="col-md-4" id="recipe-step-list-panel">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="row">
+                                        <h3 class="panel-title" id="recipe-step-title">Recipe Steps</h3>
+                                        <form class="form-inline">
+                                            <div class="form-group">
+                                                {% if IsEditMode %}
+                                                    <button class="btn btn-success btn-block" id="btn-new-recipe-step">New Step</button>
+                                                {% else %}
+                                                    <button class="btn btn-success btn-block" id="btn-new-recipe-step" hidden>New Step</button>
+                                                {% endif %}
+                                            </div>
+                                        </form>
+                                </div>
+                            </div>
+    
+                            <div class="panel-body">
+                                <div>
+                                    {% if recipe_steps %}
+                                        <div class="list-group" id="recipeStepList">
+                                            {% for recipe_step in recipe_steps %}
+                                                <a href="#"
+                                                    class="list-group-item list-group-item-action" 
+                                                    id="recipe-step-item"
+                                                    data-id="{{ recipe_step.recipe_step_id }}"
+                                                    data-number="{{ recipe_step.recipe_step_number }}"
+                                                    data-name="{{ recipe_step.recipe_step_name }}"
+                                                    data-description="{{ recipe_step.recipe_step_description }}"
+                                                    data-notes="{{ recipe_step.recipe_step_notes }}"
+                                                >
+                                                    {{ recipe_step.recipe_step_number }} - {{ recipe_step.recipe_step_name }}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div>No steps found.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                {% else %}
-                    <div class="row">
-                        <div class="col-md-6 recipe-form-buttons">
-                            <button type="button" name="editBtn" class="btn btn-primary" onclick="window.location.href='?mode=edit'">Edit</button>
-                            <button type="button" name="recipeListBtn" class="btn btn-success" onclick="window.location.href='{% url 'recipe_list' %}?curr_id={{ recipe_id }}'">Recipe List</button>
+
+                    <!-- Recipe Step Detail Column -->
+                    <div class="col-md-6 recipe-form-fields" id="recipe-step-item-panel">
+                        <form id="recipeStepForm" method="post" action="/recipe_update/step/">
+                            {% csrf_token %}
+                            <input type="hidden" name="current_step_id" id="current_step_id" value="">
+                            <h3 id="recipe-step-form-title">
+                                {% if IsEditMode %}Edit Recipe Step{% else %}Recipe Step Detail{% endif %}
+                            </h3>
+                            <div class="form-group">
+                                <label for="{{ step_form.recipe_step_name.id_for_label }}">Name:</label>
+                                {{ step_form.recipe_step_name }}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ step_form.recipe_step_number_id.id_for_label }}">Number:</label>
+                                {{ step_form.recipe_step_number }}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ step_form.recipe_step_description.id_for_label }}">Description:</label>
+                                {{ step_form.recipe_step_description }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ step_form.recipe_step_notes.id_for_label }}">Notes:</label>
+                                {{ step_form.recipe_step_notes }}
+                            </div>
+
+                            <div class="form-group" id="recipe-detail-btn-box">
+                                <button type="button" class="btn btn-success" id="btn-previous-step"><-Previous</button>
+                                <button type="button" class="btn btn-success" id="btn-next-step">Next-></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <br><br>
+
+                <div class="row">
+                    <!-- Recipe Ingredient List Column -->
+                    <div class="col-md-4" id="recipe-ingredient-list-panel">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="row">
+                                        <h3 class="panel-title" id="recipe-ingredient-title">Recipe Ingredients</h3>
+                                        <form class="form-inline">
+                                            <div class="form-group">
+                                                {% if IsEditMode %}
+                                                    <button class="btn btn-success btn-block" id="btn-new-recipe-step">New Ingredient</button>
+                                                {% else %}
+                                                    <button class="btn btn-success btn-block" id="btn-new-recipe-step" hidden>New Ingredient</button>
+                                                {% endif %}
+                                            </div>
+                                        </form>
+                                </div>
+                            </div>
+    
+                            <div class="panel-body">
+                                <div>
+                                    {% if recipe_ingredients %}
+                                        <div class="list-group" id="recipeIngredientList">
+                                            {% for recipe_ingredient in recipe_ingredients %}
+                                                <a href="#" 
+                                                    class="list-group-item list-group-item-action"
+                                                    id="recipe-ingredient-item"                                                    
+                                                    data-id2="{{ recipe_ingredient.ingredient.ingredient_id }}"
+                                                    data-quantity2="{{ recipe_ingredient.recipe_ingredient_quantity }}" 
+                                                    data-notes2="{{ recipe_ingredient.recipe_ingredient_notes }}"
+                                                    data-name2="{{ recipe_ingredient.ingredient.ingredient_name }}" 
+                                                    data-unit2="{{ recipe_ingredient.unit.unit_name }}"
+                                                    data-category2="{{ recipe_ingredient.ingredient.ingredient_category.category_name }}"
+                                                    data-type2="{{ recipe_ingredient.ingredient.ingredient_type.ingredient_type_name }}"
+                                                    data-practice2="{{ recipe_ingredient.ingredient.practice.practice_name }}"
+                                                >                                                    
+                                                    <!-- data-source2="{{ recipe_ingredient.source.source_name }}" -->
+                                                    {{ recipe_ingredient.ingredient.ingredient_name }} - {{ recipe_ingredient.ingredient.ingredient_description }}
+
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div>No ingredients found.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                {% endif %}
+
+                    <!-- Recipe Ingredient Detail Column -->
+                    <div class="col-md-6 recipe-form-fields" id="recipe-ingredient-item-panel">
+                        <form id="recipeIngredientForm" method="post" action="/recipe_update/ingredient/">
+                            {% csrf_token %}
+                            <input type="hidden" name="current_ingredient_id" id="current_ingredient_id" value="">
+                            <h3 id="recipe-ingredient-form-title">
+                                {% if IsEditMode %}Edit Recipe Ingredient{% else %}Recipe Ingredient Detail{% endif %}
+                            </h3>
+                            <div class="form-group">
+                                <label for="{{ ingredient_form.ingredient.id_for_label }}">Name:</label>
+                                {{ ingredient_form.ingredient }}
+                            </div>
+                            <div class="form-group ingredient-related">
+                                <label class="ingredient-related-label" id="ingredient-description-label">Description:</label>
+                                <span class="ingredient-related-field" id="ingredient-description-display"></span>
+                            </div>
+                            <div class="form-group ingredient-related">
+                                <label class="ingredient-related-label" id="ingredient-Type-label">Type:</label>
+                                <span class="ingredient-related-field" id="ingredient-type-display"></span>
+                            </div>
+                            <div class="form-group ingredient-related">
+                                <label class="ingredient-related-label" id="ingredient-Category-label">Category:</label>
+                                <span class="ingredient-related-field" id="ingredient-category-display"></span>
+                            </div>
+                            <div class="form-group ingredient-related">
+                                <label class="ingredient-related-label" id="ingredient-Practice-label">Practice:</label>
+                                <span class="ingredient-related-field" id="ingredient-practice-display"></span>
+                            </div>
+                            <!-- <div class="form-group">
+                                <label for="{{ ingredient_form.recipe_ingredient_source.id_for_label }}">Source:</label>
+                                {{ ingredient_form.source }}
+                            </div> -->
+                            <div class="form-group">
+                                <label for="{{ ingredient_form.recipe_ingredient_description.id_for_label }}">Quantity:</label>
+                                {{ ingredient_form.recipe_ingredient_quantity }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ ingredient_form.recipe_ingredient_description.id_for_label }}">Units:</label>
+                                {{ ingredient_form.unit }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ ingredient_form.recipe_ingredient_description.id_for_label }}">Notes:</label>
+                                {{ ingredient_form.recipe_ingredient_notes }}
+                            </div>
+                            <div id="recipe-detail-btn-box">
+                                <button type="button" class="btn btn-success" id="btn-previous-ingredient"><-Previous</button>
+                                <button type="button" class="btn btn-success" id="btn-next-ingredient">Next-></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
+
+    <br><br><br><br>
+
+    <script type="text/javascript">
+        // Variable Initialization Script
+        console.log("Variable Init Script Loading ...");
+
+        // check the URL for a curr_id query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        let curr_id = urlParams.get('curr_id');
+        // Get the recipe_id from the context variable
+        var recipeId = "{{ recipe_id }}";
+
+        // Directly generate the base URLs for editing and deleting without the placeholder
+        var editBaseUrl = "{% url 'edit_recipe' 0 %}".replace('/0/', '/');
+        var detailBaseUrl = "{% url 'recipe_detail' 0 %}".replace('/0/', '/');
+        var deleteBaseUrl = "{% url 'delete_recipe' 0 %}".replace('/0/', '/');
+
+        // Initialize the steps and ingredients arrays from the JSON data
+        var ingredientsArr = JSON.parse("{{ ingredients_json|escapejs }}");
+        var stepsArr = JSON.parse("{{ steps_json|escapejs }}");
+        console.log("Ingredients Array = ", ingredientsArr);
+        console.log("Steps Array = ", stepsArr);
+    </script>
+
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Naviation script to load Next and Previous for steps and ingredients,
+            // and to load the step and ingredient details when a click event occurs on the lists
+            const ingredientSelect = document.getElementById('id_recipe_ingredient_ingredient');
+            const descriptionDisplay = document.getElementById('ingredient-description-display');
+            const typeDisplay = document.getElementById('ingredient-type-display');
+            const categoryDisplay = document.getElementById('ingredient-category-display');
+            const practiceDisplay = document.getElementById('ingredient-practice-display');
+            let isEditMode = document.getElementById('isEditMode').innerText.trim();
+            let currentStepIndex = 0; // Start at the first step
+            let currentIngredientIndex = 0; // Start at the first ingredient
+            let currentIngredientId = ingredientsArr[currentIngredientIndex].fields.ingredient.toString();
+
+            // Function to log the steps and ingredients to the console
+            function logData() {
+                console.log("stepsArray: ", stepsArr);
+                console.log("ingredientsArray: ", ingredientsArr);
+            }
+        
+            // Function to move to the first step and load its details
+            function moveToFirstStep() {
+                if (stepsArr.length > 0) { // Check if there are any steps
+                    currentStepIndex = 0; // Set to the first step
+                    loadStepDetails(stepsArr[currentStepIndex].fields); // Load the first step's details
+                }
+            }
+
+            function moveToNextStep() {
+                if (currentStepIndex < stepsArr.length - 1) {
+                    console.log("Edit Mode: ", isEditMode);
+                    if (isEditMode == 'true') {
+                        console.log('Save Step to local array:', stepsArr[currentStepIndex].fields);
+                        saveStepDetails(stepsArr[currentStepIndex].fields);
+                    }
+                    currentStepIndex++;
+                    loadStepDetails(stepsArr[currentStepIndex].fields);
+                    console.log("Current Step Index: ", currentStepIndex);
+                    console.log("Current Step ID: ", stepsArr[currentStepIndex].fields.recipe_step_id);
+                }
+            }
+
+            function moveToPreviousStep() {
+                if (currentStepIndex > 0) {
+                    console.log("Edit Mode: ", isEditMode);
+                    if (isEditMode == 'true') {
+                        console.log('Save Step to local array:', stepsArr[currentStepIndex].fields);
+                        saveStepDetails(stepsArr[currentStepIndex].fields);
+                    }
+                    currentStepIndex--;
+                    loadStepDetails(stepsArr[currentStepIndex].fields);
+                    console.log("Current Step Index: ", currentStepIndex);
+                    console.log("Current Step ID: ", stepsArr[currentStepIndex].fields.recipe_step_id);
+                }
+            }
+
+            // Function to move to the first ingredient and load its details
+            function moveToFirstIngredient() {
+                if (ingredientsArr.length > 0) { // Check if there are any ingredients
+                    if (isEditMode == 'true') {
+                        console.log('Save Step to local array:', stepArr[currentStepIndex].fields);
+                        saveStepDetails(stepsArr[currentStepIndex].fields);
+                    }
+                    currentIngredientIndex = 0; // Set to the first ingredient
+                    loadIngredientDetails(ingredientsArr[currentIngredientIndex].fields); // Load the first ingredients's details
+                }
+            }
+
+            function moveToNextIngredient() {
+                console.log("moveToNextIngredient")
+                if (currentIngredientIndex < ingredientsArr.length - 1) {
+                    if (isEditMode == 'true') {
+                        console.log('Save Ingredient to local array:', ingredientsArr[currentIngredientIndex].fields);
+                        saveIngredientDetails(ingredientsArr[currentIngredientIndex].fields);
+                    }
+                    currentIngredientIndex++;
+                    loadIngredientDetails(ingredientsArr[currentIngredientIndex].fields);
+                }
+            }
+
+            function moveToPreviousIngredient() {
+                console.log("moveToPreviousIngredient")
+                if (currentIngredientIndex > 0) {
+                    if (isEditMode === true) {
+                        console.log('Save Ingredient to local array:', ingredientsArr[currentIngredientIndex].fields);
+                        saveIngredientDetails(ingredientsArr[currentIngredientIndex].fields);
+                    }
+                    currentIngredientIndex--;
+                    loadIngredientDetails(ingredientsArr[currentIngredientIndex].fields);
+                }
+            }
+
+            function loadStepDetails(stepArr) {
+                // Update the DOM elements with step details
+                console.log("Loading step:", stepArr);
+                document.getElementById("id_recipe_step_name").value = stepArr.recipe_step_name;
+                document.getElementById("id_recipe_step_number").value = stepArr.recipe_step_number;
+                document.getElementById("id_recipe_step_description").value = stepArr.recipe_step_description;
+                document.getElementById("id_recipe_step_notes").value = stepArr.recipe_step_notes;
+                document.getElementById("current_step_id").value = stepArr.pk; // Assuming you have a hidden field for current step ID
+
+                console.log('Loading step details');
+                console.log('stepName: ', stepArr.recipe_step_name);
+                console.log('stepNumber: ', stepArr.recipe_step_number);
+                console.log('stepDescription: ', stepArr.recipe_step_description);
+                console.log('stepNotes: ', stepArr.recipe_step_notes);
+                console.log('stepId: ', stepArr.pk);
+
+            }
+
+            function loadIngredientDetails(ingredientArr) {
+                // check if ingrediant details is dirty, if so, save it to the array
+                console.log("Loading ingredient 1: ", ingredientArr)
+                const ingredient = ingredientsArr.find(ingredient => ingredient.fields.ingredient.toString() === ingredientArr.ingredient.toString());
+
+                // Update the DOM elements with ingredient details
+                console.log("Loading ingredient 2:", ingredientArr);
+                document.getElementById("id_recipe_ingredient_ingredient").value = ingredientArr.ingredient;
+                document.getElementById("id_recipe_ingredient_quantity").value = ingredientArr.recipe_ingredient_quantity;
+                document.getElementById("id_recipe_ingredient_unit").value = ingredientArr.unit;
+                document.getElementById("id_recipe_ingredient_notes").value = ingredientArr.recipe_ingredient_notes;
+                document.getElementById("current_ingredient_id").value = ingredientArr.id; // Assuming you have a hidden field for current ingredient ID
+
+                // Fetch and update the ingredient-related fields
+                loadIngredientRelated(ingredientArr.ingredient);
+            }
+
+            function saveStepDetails() {
+                // Get the step details from the form
+                const stepId = document.getElementById("current_step_id").value;
+                const stepName = document.getElementById("id_recipe_step_name").value;
+                const stepNumber = document.getElementById("id_recipe_step_number").value;
+                const stepDescription = document.getElementById("id_recipe_step_description").value;
+                const stepNotes = document.getElementById("id_recipe_step_notes").value;
+            
+                console.log('Saving step details');
+                console.log('stepName: ', stepName);
+                console.log('stepNumber: ', stepNumber);
+                console.log('stepDescription: ', stepDescription);
+                console.log('stepNotes: ', stepNotes);
+                console.log('stepId: ', stepId);
+
+                // Find the step in stepsArr with the matching id
+                const step = stepsArr.find(step => step.pk.toString() === stepId);
+                if (step) {
+                    // Update the step details in the stepsArr
+                    console.log('Updating step - old version:', step);
+                    step.fields.recipe_step_name = stepName;
+                    step.fields.recipe_step_number = stepNumber;
+                    step.fields.recipe_step_description = stepDescription;
+                    step.fields.recipe_step_notes = stepNotes;
+                    console.log('Updated step - new version:', step);
+                } else {
+                    console.error('Step not found:', stepId);
+                }
+            }
+
+                        // Function to save the ingredient details to the ingredientsArr
+            function saveIngredientDetails() {
+                // Get the ingredient details from the form
+                const ingredientId = document.getElementById("id_recipe_ingredient_ingredient").value;
+                const quantity = document.getElementById("id_recipe_ingredient_quantity").value;
+                const unit = document.getElementById("id_recipe_ingredient_unit").value;
+                const notes = document.getElementById("id_recipe_ingredient_notes").value;
+
+                console.log('Saving ingredient details - ID, Quantity, Unit, Notes: ', ingredientId, quantity, unit, notes)
+                // Find the ingredient in ingredientsArr with the matching id
+                const ingredient = ingredientsArr.find(ingredient => ingredient.fields.ingredient.toString() === ingredientId);
+                if (ingredient) {
+                    // Update the ingredient details in the ingredientsArr
+                    console.log('Updating ingredient - old version:', ingredient);
+                    ingredient.fields.recipe_ingredient_quantity = quantity;
+                    ingredient.fields.unit = unit;
+                    ingredient.fields.recipe_ingredient_notes = notes;
+                    console.log('Updated ingredient - new version:', ingredient);
+                } else {
+                    console.error('Ingredient not found:', ingredientId);
+                }
+            }
+
+            // Function to fetch and update the ingredient-related fields
+            function loadIngredientRelated(ingredientId = "") {
+                console.log('Loading Ingredient related for:', ingredientId);
+                if (!ingredientId) {
+                    ingredientId = ingredientSelect.value;
+                }
+                console.log('Fetching ingredient data for:', ingredientId);
+                //fetch(`/get-ingredient/${ingredientId}/`)
+                fetch(`/soilRegenApp/get-ingredient/${ingredientId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Fetched ingredient data:', data);
+                        descriptionDisplay.textContent = data.ingredient_description || 'Description not available';
+                        typeDisplay.textContent = data.ingredient_type || 'Type not available';
+                        categoryDisplay.textContent = data.ingredient_category || 'Category not available';
+                        practiceDisplay.textContent = data.practice || 'Practice not available';
+                    })
+                    .catch(error => console.error('Error fetching ingredient data:', error));
+            }
+
+            // Listen for changes on the ingredient select dropdown
+            ingredientSelect.addEventListener('change', loadIngredientRelated);
+
+            // Update description on initial load
+            loadIngredientRelated();
+
+            // Attach the navigation functions to your buttons
+            document.getElementById('btn-next-step').addEventListener('click', moveToNextStep);
+            document.getElementById('btn-previous-step').addEventListener('click', moveToPreviousStep);
+            document.getElementById('btn-next-ingredient').addEventListener('click', moveToNextIngredient);
+            document.getElementById('btn-previous-ingredient').addEventListener('click', moveToPreviousIngredient);
+
+            // Respond to a click event on a record in the recipe step list, by
+            // loading the corresponding recipe step data into the step detail form
+            const recipeStepItems = document.querySelectorAll('#recipeStepList .list-group-item');
+
+            recipeStepItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Save the ingredient to the array before loading the next one
+                    if (isEditMode === true) {
+                        console.log('Save Step to local array:', stepsArr[currentStepIndex].fields);
+                        saveStepDetails(stepsArr[currentStepIndex].fields);
+                    }
+
+                    const stepId = this.dataset.id;
+                    // Find the step in stepsArr with the matching id
+                    const step = stepsArr.find(step => step.pk.toString() === stepId);
+                    currentStepIndex = stepsArr.findIndex(step => step.pk.toString() === stepId);
+                    if (step) {
+                        // moveToStep(moveIndex);
+                        loadStepDetails(step.fields); // Assuming loadStepDetails is expecting an object with step details
+                    } else {
+                        console.error('Step not found:', stepId);
+                    }
+                });
+            });
+
+             // Respond to a click event on a record in the recipe ingredient list, by
+            // loading the corresponding recipe ingredient data into the ingredient detail form
+            const recipeIngredientItems = document.querySelectorAll('#recipeIngredientList .list-group-item');
+
+            recipeIngredientItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Save the ingredient to the array before loading the next one
+                    if (isEditMode === true) {
+                        console.log('Save Ingredient to local array:', ingredientsArr[currentIngredientIndex].fields);
+                        saveIngredientDetails(ingredientsArr[currentIngredientIndex].fields);
+                    }
+
+                    const ingredientId = this.dataset.id2; // Make sure 'id2' matches the data attribute in your HTML
+                    // Find the ingredient in ingredientsArr with the matching id
+                    const ingredient = ingredientsArr.find(ingredient => ingredient.fields.ingredient.toString() === ingredientId);
+                    currentIngredientIndex = ingredientsArr.findIndex(ingredient => ingredient.fields.ingredient.toString() === ingredientId);
+
+                    if (ingredient) {
+                        // moveToIngredient(moveIndex);
+                        loadIngredientDetails(ingredient.fields); // Assuming loadStepDetails is expecting an object with step details
+                    } else {
+                        console.error('Ingredient not found:', ingredientId); // Error if the ingredient wasn't found
+                    }
+                    
+                    console.log("Full ingredientsArr:", ingredientsArr); // Display the entire ingredientsArr for reference
+                });
+            });
+        });
+    </script>
+    
+    {% if curr_id %}
+    <script>
+        // <-Previous & Next-> button code to simulate a click on the list item & load details
+        console.log("A. Simulate click script loaded!");
+        document.addEventListener('DOMContentLoaded', function() {
+            var currId = "{{ curr_id }}";
+    
+            // Handle recipe step items
+            var recipeStepItems = document.querySelectorAll('[data-id]');
+            recipeStepItems.forEach(function(item) {
+                if (item.getAttribute('data-id') === currId) {
+                    item.click();  // Simulate click
+                }
+            });
+    
+            // Handle recipe ingredient items (if they have a different data attribute)
+            var recipeIngredientItems = document.querySelectorAll('[data-id2]');
+            recipeIngredientItems.forEach(function(item) {
+                if (item.getAttribute('data-id2') === currId) {
+                    item.click();  // Simulate click
+                }
+            });
+        });
+    </script>
+    {% endif %}
+
 {% endblock %}

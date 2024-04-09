@@ -1,41 +1,38 @@
 from django.views import View
 import requests
 import pandas as pd
+import json
 from datetime import datetime, date, timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 from django.contrib.auth.views import PasswordResetView
 from django.core.mail import send_mail
 from django.core.serializers import serialize
+from django.core import serializers
 from django.db import transaction, IntegrityError
-from django.http.response import HttpResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.http.response import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.template import loader
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils import dateformat, formats, timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views import View, generic
-from django.views.generic import FormView
-from .forms import CustomUserCreationForm
-
-from .forms import AddFarmForm, DeleteFarmForm, RecipeForm
-from .models import Country, Farm, Field, Recipe, UserProfile
+from django.views.generic import FormView, ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.forms.models import model_to_dict
+from .forms import AddFarmForm, DeleteFarmForm, EditRecipeForm, CustomUserCreationForm, RecipeStepForm, RecipeIngredientForm
+from .models import Amendment, AmendmentCategory, AmendmentElement, AmendmentType, Analysis, AnalysisItem
+from .models import Country, Element, Farm, Field, Ingredient, Recipe, RecipeStep, RecipeIngredient, ReportItem, RecipeStep, SoilReport, Source, SourceAmendment, UserProfile
 from .services import  AmendmentRatioService
 
 
-def index(request):
-    return render(request, 'home.html')
-
 # views for static pages
 
-def home_view(request):
-    """Render the home page."""
-    print("Home view is being called")
-    return render(request, 'home.html')
 
 def about_view(request):
     """Render the about page."""
@@ -47,15 +44,295 @@ def contact_view(request):
     print("Contact view is being called")
     return render(request, 'contact.html')
 
+def custom_logout(request):
+    logout(request)
+    print("User has logged out")
+    return render(request, 'logged_out.html')
+
+def get_ingredient(request, ingredient_id):
+    try:
+        ingredient = Ingredient.objects.select_related(
+            'practice', 
+            'ingredient_category', 
+            'ingredient_type'
+        ).get(pk=ingredient_id)
+
+        ingredient_dict = model_to_dict(ingredient)
+        # Manually include the related objects' information
+        ingredient_dict['practice'] = str(ingredient.practice) if ingredient.practice else None
+        ingredient_dict['ingredient_category'] = str(ingredient.ingredient_category) if ingredient.ingredient_category else None
+        ingredient_dict['ingredient_type'] = str(ingredient.ingredient_type) if ingredient.ingredient_type else None
+        print("Ingredient_Dict w/related fields: ", ingredient_dict)
+        return JsonResponse(ingredient_dict)
+    except Ingredient.DoesNotExist:
+        return JsonResponse({'error': 'Ingredient not found'}, status=404)
+    
+def get_recipe_step_details(request, recipe_step_id):
+    try:
+        steps = RecipeStep.objects.get(recipe_step_id=recipe_step_id)
+        data = {
+            'name': steps.recipe_step_name,
+            'number': steps.recipe_step_number,
+            'description': steps.recipe_step_description,
+            'notes': steps.recipe_step_notes,
+        }
+        return JsonResponse(data)
+    except RecipeStep.DoesNotExist:
+        return JsonResponse({'error': 'Recipe step not found'}, status=404)
+
+def get_recipe_ingredient_details(request, recipe_ingredient_id):
+    try:
+        ingredients = RecipeIngredient.objects.get(recipe_ingredient_id=recipe_ingredient_id)
+         
+        data = {
+            'name': ingredients.recipe_step_name,
+            'number': ingredients.recipe_step_number,
+            'description': ingredients.recipe_step_description,
+            'notes': ingredients.recipe_step_notes,
+        }
+        return JsonResponse(data)
+    except RecipeStep.DoesNotExist:
+        return JsonResponse({'error': 'Recipe step not found'}, status=404)
+    
+def home_view(request):
+    """Render the home page."""
+    print("Home view is being called")
+    return render(request, 'home.html')
+
+def index(request):
+    return render(request, 'home.html')
+
 def profile_view(request):
     """Render the profile page."""
     print("Profile view is being called")
     return render(request, 'profile.html')
 
-def custom_logout(request):
-    logout(request)
-    print("User has logged out")
-    return render(request, 'logged_out.html')
+@csrf_exempt
+def save_steps_batch(request):
+    if request.method == 'POST':
+        try:
+            steps_data = json.loads(request.body)
+            for step_data in steps_data:
+                step_id = step_data.get('id')
+                if step_id:
+                    # Update existing step
+                    step = RecipeStep.objects.get(pk=step_id)
+                else:
+                    # Create new step
+                    step = RecipeStep()
+
+                step.recipe_step_name = step_data.get('name')
+                step.recipe_step_number = step_data.get('number')
+                step.recipe_step_description = step_data.get('description')
+                step.recipe_step_notes = step_data.get('notes')
+                # Make sure to set the recipe as well
+                step.recipe_id = step_data.get('recipe_id')
+                step.save()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+    
+class AmendmentController(View):
+    def __init__(self):
+        self.api_key = settings.API_KEY
+
+    @method_decorator(login_required(login_url='/accounts/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def amendment_list(self, request):
+        amendments = Amendment.objects.all()
+        context = {'amendments': amendments.order_by('product_name')}
+        return render(request, 'amendment_list.html', context)
+
+    def amendment_detail(self, request, amendment_id):
+        try:
+            amendment = Amendment.objects.get(amendment_id=amendment_id)
+        except Amendment.DoesNotExist:
+            messages.error(request, f"Amendment ID {amendment_id} does not exist")
+            return redirect('amendment_list')
+        context = {
+            'amendment': amendment
+        }
+        return render(request, 'amendment_detail.html', context)
+
+
+class AnalysisController(View):
+    def __init__(self):
+        self.api_key = settings.API_KEY
+
+    @method_decorator(login_required(login_url='/accounts/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def analysis_list(self, request):
+        print("Analysis: GET ALL")
+        analyses = Analysis.objects.all() 
+        context = {'analyses': sorted(analyses, key=lambda analysis: analysis.analysis_date)}
+        return render(request, 'analysis_list.html', context)
+
+    def analysis_detail(request, analysis_id):
+        try:
+            analysis = Analysis.objects.get(analysis_id=analysis_id)
+        except Analysis.DoesNotExist:
+            messages.error(request, f"Analysis ID {analysis_id} does not exist")
+            return redirect('analysis_list')
+        context = {
+            'analysis': analysis,
+        }
+        return render(request, 'analysis_detail.html', context)
+
+    # Create operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def create_analysis(self, request):
+        if request.method == 'POST':
+            analysis_date = request.POST.get('analysis_date')
+            description = request.POST.get('description')
+            soil_report_id = request.POST.get('soil_report_id')
+            new_analysis = Analysis.objects.create(
+                analysis_date=analysis_date,
+                description=description,
+                soil_report_id=soil_report_id
+            )
+            new_analysis.save()
+            return redirect('analysis_list')
+
+    # Update operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def update_analysis(self, request, analysis_id):
+        analysis = get_object_or_404(Analysis, analysis_id=analysis_id)
+        if request.method == 'POST':
+            analysis.analysis_date = request.POST.get('analysis_date')
+            analysis.description = request.POST.get('description')
+            analysis.soil_report_id = request.POST.get('soil_report_id')
+            analysis.save()
+            return redirect('analysis_detail', analysis_id=analysis.analysis_id)
+
+    # Delete operation
+    def delete_analysis(self, request, analysis_id):
+        analysis = get_object_or_404(Analysis, analysis_id=analysis_id)
+        analysis.delete()
+        return redirect('analysis_list')
+
+class AnalysisItemController(View):
+    def __init__(self):
+        self.api_key = settings.API_KEY
+
+    @method_decorator(login_required(login_url='/accounts/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def analysis_item_list(self, request):
+        print("Analysis Item: GET ALL")
+        analysis_items = AnalysisItem.objects.all() 
+        context = {'analysis_items': sorted(analysis_items, key=lambda item: item.description)}
+        return render(request, 'analysis_item_list.html', context)
+
+    def analysis_item_detail(request, item_id):
+        try:
+            analysis_item = AnalysisItem.objects.get(item_id=item_id)
+        except AnalysisItem.DoesNotExist:
+            messages.error(request, f"Analysis Item ID {item_id} does not exist")
+            return redirect('analysis_item_list')
+        context = {
+            'analysis_item': analysis_item,
+        }
+        return render(request, 'analysis_item_detail.html', context)
+
+    # Create operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def create_analysis_item(self, request):
+        if request.method == 'POST':
+            description = request.POST.get('description')
+            analysis_id = request.POST.get('analysis_id')
+            report_item_id = request.POST.get('report_item_id')
+            new_analysis_item = AnalysisItem.objects.create(
+                description=description,
+                analysis_id=analysis_id,
+                report_item_id=report_item_id
+            )
+            new_analysis_item.save()
+            return redirect('analysis_item_list')
+
+    # Update operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def update_analysis_item(self, request, item_id):
+        analysis_item = get_object_or_404(AnalysisItem, item_id=item_id)
+        if request.method == 'POST':
+            analysis_item.description = request.POST.get('description')
+            analysis_item.analysis_id = request.POST.get('analysis_id')
+            analysis_item.report_item_id = request.POST.get('report_item_id')
+            analysis_item.save()
+            return redirect('analysis_item_detail', item_id=analysis_item.item_id)
+
+    # Delete operation
+    def delete_analysis_item(self, request, item_id):
+        analysis_item = get_object_or_404(AnalysisItem, item_id=item_id)
+        analysis_item.delete()
+        return redirect('analysis_item_list')
+
+
+class ElementController(View):
+    def __init__(self):
+        self.api_key = settings.API_KEY
+
+    @method_decorator(login_required(login_url='/accounts/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def element_list(self, request):
+        print("Element: GET ALL")
+        elements = Element.objects.all() 
+        context = {'elements': sorted(elements, key=lambda element: element.element_name)}
+        return render(request, 'element_list.html', context)
+
+    def element_detail(request, element_id):
+        try:
+            element = Element.objects.get(element_id=element_id)  
+        except Element.DoesNotExist:
+            messages.error(request, f"Element ID {element_id} does not exist")
+            return redirect('element_list')
+        context = {
+            'element': element,
+        }
+        return render(request, 'element_detail.html', context)
+
+    # Create operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def create_element(self, request):
+        if request.method == 'POST':
+            element_name = request.POST.get('element_name')
+            common_name = request.POST.get('common_name')
+            element_symbol = request.POST.get('element_symbol')
+            description = request.POST.get('description')
+            new_element = Element.objects.create(
+                element_name=element_name,
+                common_name=common_name,
+                element_symbol=element_symbol,
+                description=description
+            )
+            new_element.save()
+            return redirect('element_list')
+
+    # Update operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def update_element(self, request, element_id):
+        element = get_object_or_404(Element, element_id=element_id)
+        if request.method == 'POST':
+            element.element_name = request.POST.get('element_name')
+            element.common_name = request.POST.get('common_name')
+            element.element_symbol = request.POST.get('element_symbol')
+            element.description = request.POST.get('description')
+            element.save()
+            return redirect('element_detail', element_id=element.element_id)
+
+    # Delete operation
+    def delete_element(self, request, element_id):
+        element = get_object_or_404(Element, element_id=element_id)
+        element.delete()
+        return redirect('element_list')
 
 
 class FarmController(View):
@@ -185,70 +462,193 @@ class FieldController(View):
         return redirect('field_list')
 
 
-class RecipeController(View):
+# class RecipeCreateView(CreateView):
+#     model = Recipe
+#     fields = ['recipe_name', 'recipe_description', 'recipe_category', 
+#               'recipe_type', 'recipe_application', 'recipe_practice', 
+#               'recipe_notes', 'recipe_rate', 'recipe_rate_units']
+#     template_name = 'recipe_form.html'
+#     success_url = '/some-success-url/'
 
-    def get(self, request, *args, **kwargs):
-        if 'recipe_id' in kwargs:
-            return self.recipe_detail(request, kwargs['recipe_id'])
-        else:
-            return self.recipe_list(request)
-        
-    def recipe_list(self, request):
-        # Fetch all recipes from the database and order them by name
-        recipes = Recipe.objects.all().order_by('recipe_name')
-        context = {'recipes': recipes}
-        return render(request, 'recipe.html', context)
+class RecipeListView(ListView):
+    model = Recipe
+    template_name = 'recipe.html'
+    context_object_name = 'recipes'
     
-    def recipe_detail(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-        # check if the current user is the owner of the recipe
-        # and pass that information to the template for conditional display of edit/delete options
-        is_owner = False
-        if request.user.is_authenticated and recipe.user == request.user.userprofile:
-            is_owner = True
+    def get_queryset(self):
+        # Order recipes by name
+        # queryset = Recipe.objects.all().order_by('recipe_name')
+        queryset = Recipe.objects.select_related('practice', 'application', 'unit').order_by('recipe_name')
+        if self.request.user.is_authenticated:
+            auth_user_id = self.request.user.id
+            for recipe in queryset:
+                recipe.is_owner = (auth_user_id == recipe.user_id)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Include curr_id in context to highlight the current recipe
+        context['curr_id'] = self.request.GET.get('curr_id')
+        return context
+
+class RecipeUpdateView(UpdateView):
+    model = Recipe
+    form_class = EditRecipeForm
+    template_name = 'recipe_form.html'
+    pk_url_kwarg = 'recipe_id'
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)  # Get the form instance
+        mode = self.request.GET.get('mode', '')
+        is_edit_mode = (mode == 'edit')
+        recipe_steps = RecipeStep.objects.filter(recipe_id=self.kwargs.get('recipe_id')).order_by('recipe_step_number')
+        max_step_num = recipe_steps.last().recipe_step_number if recipe_steps.exists() else 0
+
+        if not is_edit_mode:
+            # Disable all form fields if not in edit mode
+            for field_name, field in form.fields.items():
+                field.disabled = True
+
+        return form
+
+    def get_success_url(self):
+        # Make sure 'id' matches the name of your primary key field
+        recipe_id = self.kwargs['recipe_id']
+        return reverse_lazy('recipe_list') + '?curr_id=' + str(recipe_id)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        mode = self.request.GET.get('mode', '')
+        context['IsEditMode'] = (mode == 'edit')
+        context['recipe_id'] = self.kwargs.get('recipe_id', 'defaultID')
+        context['step_form'] = RecipeStepForm()
+        context['ingredient_form'] = RecipeIngredientForm()
+    
+        if self.object:  # Ensures we have a recipe object
+            recipe_steps = self.object.recipestep_set.order_by('recipe_step_number').all()
+            context['recipe_steps'] = recipe_steps
+            first_step = context['recipe_steps'].first()
+            context['step_form'] = RecipeStepForm(instance=first_step)
+
+            # Serialize recipe ingredients to JSON
+            steps_json = serializers.serialize('json', recipe_steps)
+            context['steps_json'] = steps_json
             
-        context = {'recipe': recipe}
-        return render(request, 'recipe_detail.html', context)
+            # Disable step form fields if not in edit mode
+            if not context['IsEditMode']:
+                for field_name, field in context['step_form'].fields.items():
+                    field.disabled = True
 
-    @method_decorator(login_required(login_url='/accounts/login/'))
-    def create_recipe(self, request):
-        if request.method == 'POST':
-            form = RecipeForm(request.POST)
-            if form.is_valid():
-                new_recipe = form.save(commit=False)
-                new_recipe.user = UserProfile.objects.get(user=request.user)
-                new_recipe.save()
-                messages.success(request, 'Recipe added successfully!')
-                return redirect('recipe_list')
-            else:
-                for error in form.errors:
-                    messages.error(request, f"{error}: {form.errors[error]}")
+            # Fetch all recipe ingredients and related data
+            recipe_ingredients = self.object.recipeingredient_set.all().prefetch_related(
+                'ingredient', 'unit', 'source',
+                'ingredient__practice', 'ingredient__ingredient_category',
+                'ingredient__ingredient_type'
+            ).order_by('ingredient__ingredient_name')
+            print("Recipe Ingredients: ", recipe_ingredients)
+            context['recipe_ingredients'] = recipe_ingredients
+            first_ingredient = recipe_ingredients.first()
+            context['ingredient_form'] = RecipeIngredientForm(instance=first_ingredient)
+        
+            # Serialize recipe ingredients to JSON
+            ingredients_json = serializers.serialize('json', recipe_ingredients)
+            context['ingredients_json'] = ingredients_json
+    
+            # Disable ingredient form fields if not in edit mode
+            if not context['IsEditMode']:
+                for field_name, field in context['ingredient_form'].fields.items():
+                    field.disabled = True
+        
         else:
-            form = RecipeForm()
-        return render(request, 'recipe_form.html', {'form': form})
+            context['recipe_steps'] = []
+            context['recipe_ingredients'] = []
+
+        return context
+
+class RecipeDeleteView(DeleteView):
+    model = Recipe
+    template_name = 'recipe_confirm_delete.html'
+    success_url = reverse_lazy('recipe_list') # Adjust as necessary
+
+    # def delete(self, request, *args, **kwargs):
+    #     messages.success(request, 'Recipe was deleted successfully!')
+    #     return super(RecipeDeleteView, self).delete(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        messages.success(request, 'The recipe was successfully deleted!')
+        return super(RecipeDeleteView, self).post(request, *args, **kwargs)
+    
+    # def delete(self, request, *args, **kwargs):
+    #     response = super(RecipeDeleteView, self).delete(request, *args, **kwargs)
+    #     print(list(messages.get_messages(request)))  # Print messages for debugging
+    #     return response
+
+
+class ReportItemController(View):
+    def __init__(self):
+        self.api_key = settings.API_KEY
 
     @method_decorator(login_required(login_url='/accounts/login/'))
-    def update_recipe(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def report_item_list(self, request):
+        print("ReportItem: GET ALL")
+        report_items = ReportItem.objects.all() 
+        context = {'report_items': sorted(report_items, key=lambda item: item.tested_element)}
+        return render(request, 'report_item_list.html', context)
+
+    def report_item_detail(request, item_id):
+        try:
+            report_item = ReportItem.objects.get(item_id=item_id)
+        except ReportItem.DoesNotExist:
+            messages.error(request, f"ReportItem ID {item_id} does not exist")
+            return redirect('report_item_list')
+        context = {
+            'report_item': report_item,
+        }
+        return render(request, 'report_item_detail.html', context)
+
+    # Create operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def create_report_item(self, request):
         if request.method == 'POST':
-            form = RecipeForm(request.POST, instance=recipe)
-            if form.is_valid():
-                form.save()
-                messages.success(request, 'Recipe updated successfully!')
-                return redirect('recipe_detail', recipe_id=recipe.recipe_id)
-            else:
-                for error in form.errors:
-                    messages.error(request, f"{error}: {form.errors[error]}")
-        else:
-            form = RecipeForm(instance=recipe)
-        return render(request, 'recipe_form.html', {'form': form, 'recipe': recipe})
+            tested_element = request.POST.get('tested_element')
+            unit = request.POST.get('unit')
+            results = request.POST.get('results')
+            target_ratio = request.POST.get('target_ratio')
+            target_level = request.POST.get('target_level')
+            report_id = request.POST.get('report_id')
+            new_report_item = ReportItem.objects.create(
+                tested_element=tested_element,
+                unit=unit,
+                results=results,
+                target_ratio=target_ratio,
+                target_level=target_level,
+                report_id=report_id
+            )
+            new_report_item.save()
+            return redirect('report_item_list')
 
-    @method_decorator(login_required(login_url='/accounts/login/'))
-    def delete_recipe(self, request, recipe_id):
-        recipe = get_object_or_404(Recipe, recipe_id=recipe_id)
-        recipe.delete()
-        messages.success(request, 'Recipe deleted successfully!')
-        return redirect('recipe_list')
+    # Update operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def update_report_item(self, request, item_id):
+        report_item = get_object_or_404(ReportItem, item_id=item_id)
+        if request.method == 'POST':
+            report_item.tested_element = request.POST.get('tested_element')
+            report_item.unit = request.POST.get('unit')
+            report_item.results = request.POST.get('results')
+            report_item.target_ratio = request.POST.get('target_ratio')
+            report_item.target_level = request.POST.get('target_level')
+            report_item.report_id = request.POST.get('report_id')
+            report_item.save()
+            return redirect('report_item_detail', item_id=report_item.item_id)
+
+    # Delete operation
+    def delete_report_item(self, request, item_id):
+        report_item = get_object_or_404(ReportItem, item_id=item_id)
+        report_item.delete()
+        return redirect('report_item_list')
 
 
 class ResetView(PasswordResetView):
@@ -260,12 +660,97 @@ class ResetView(PasswordResetView):
     def form_valid(self, form):
         print("Sending email")
         return super().form_valid(form)
-    
-    
+
+
 class SignUpView(generic.CreateView):
     form_class = CustomUserCreationForm
     success_url = reverse_lazy("login")
     template_name = "registration/signup.html"
+
+
+class SoilReportController(View):
+    def __init__(self):
+        self.api_key = settings.API_KEY
+
+    @method_decorator(login_required(login_url='/accounts/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def report_list(self, request):
+        print("Report: GET ALL")
+        reports = Report.objects.all()
+        context = {'reports': sorted(reports, key=lambda report: report.report_name)}
+        return render(request, 'report_list.html', context)
+
+    def report_detail(request, report_id):
+        try:
+            report = Report.objects.get(report_id=report_id)
+            report_fields = report.field_set.order_by('report_date')
+        except Report.DoesNotExist:
+            messages.error(request, f"Report ID {report_id} does not exist")
+            return redirect('report_list')
+        context = {
+            'report': report,
+            'report_fields': report_fields
+        }
+        return render(request, 'report_detail.html', context)
+
+    # Create operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def create_report(self, request):
+        if request.method == 'POST':
+            report_date = request.POST.get('report_date')
+            lab_name = request.POST.get('lab_name')
+            field_id = request.POST.get('field_id')
+            new_report = Report.objects.create(
+                report_date=report_date,
+                lab_name=lab_name,
+                field_id=field_id
+            )
+            new_report.save()
+            return redirect('report_list')
+
+    # Update operation
+    @csrf_exempt  # Using this decorator to allow POST requests
+    def update_report(self, request, report_id):
+        report = get_object_or_404(Report, report_id=report_id)
+        if request.method == 'POST':
+            report.report_date = request.POST.get('report_date')
+            report.lab_name = request.POST.get('lab_name')
+            report.field_id = request.POST.get('field_id')
+            report.save()
+            return redirect('report_detail', report_id=report.report_id)
+
+    # Delete operation
+    def delete_report(self, request, report_id):
+        report = get_object_or_404(Report, report_id=report_id)
+        report.delete()
+        return redirect('report_list')
+
+
+class SourceController(View):
+    def __init__(self):
+        self.api_key = settings.API_KEY
+
+    @method_decorator(login_required(login_url='/accounts/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def source_list(self, request):
+        sources = Source.objects.all() 
+        context = {'sources': sources.order_by('name')}
+        return render(request, 'source_list.html', context)
+
+    def source_detail(self, request, source_id):
+        try:
+            source = Source.objects.get(source_id=source_id)
+        except Source.DoesNotExist:
+            messages.error(request, f"Source ID {source_id} does not exist")
+            return redirect('source_list')
+        context = {
+            'source': source
+        }
+        return render(request, 'source_detail.html', context)
 
 
 class UserProfileController(View):
