@@ -318,6 +318,16 @@ p {
     padding-bottom: 2.5rem;
 }
 
+#content-wrap4 {
+    position: relative;
+    margin-top: -18%;
+    margin-left: 6em;
+    margin-right: 6em;
+    color: darkgreen;
+    font-weight: 600;
+    padding-bottom: 2.5rem;
+}
+
 #message-wrap {
     /* position: relative; */
     margin-left: 2em;

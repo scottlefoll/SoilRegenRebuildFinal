@@ -1,0 +1,90 @@
+/* #recipe-container {
+    width: 100%;
+} */
+
+p {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 1.15em;
+    font-weight: 500;
+    line-height: 1.43;
+}
+
+.container {
+    width: 100%;
+}
+
+/* Ensure the form and its elements align properly */
+.form-inline .checkbox label {
+    margin: 0;
+    margin-left: 1em; 
+    /* margin-right: 3px;  */
+    padding-left: 0;
+}
+
+/* Adjusts the checkbox itself */
+.form-inline .checkbox input[type="checkbox"] {
+    margin: 0; /* Removes any default margin */
+    padding: 0; /* Removes any default padding */
+    margin-left: -2em;
+}
+
+/* Additional adjustment for inline display */
+.form-inline .checkbox {
+    display: inline-block; /* Ensures checkbox and label are on the same line */
+}
+
+.form-inline {
+    padding-left: 0; /* Adjust as necessary */
+}
+
+.form-inline .form-group {
+    margin-right: 0; /* Adjust spacing between form elements */
+}
+
+.form-inline .input-group-addon {
+    cursor: pointer; /* Optional: Changes cursor to pointer when hovering over search icon */
+}
+
+/* Adjust input group margin for visual alignment */
+.input-group {
+    margin-top: 10px; /* Adjust based on actual layout */
+    margin-right: .8em;
+}
+
+.panel-title {
+    font-size: 18px;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+
+#recipe-btn-box {
+    width:min-content;
+}
+
+#recipe-title {
+    font-weight: 600;
+    margin-left: 1em;
+}
+
+#recipe-item-title {
+    font-weight: 600;
+    margin-left: 0;
+}
+
+#recipe-list-panel {
+    padding-right: 2em;
+}
+
+#recipe-item-panel {
+    padding-right: 2em;
+}
+
+#searchBox {
+    width: 14em;
+    margin: 0;
+    margin-left: -2em;
+}
+
+#starts-with {
+    line-height: 100%;
+}

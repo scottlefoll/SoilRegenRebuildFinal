@@ -1,26 +1,99 @@
-<!-- templates/home.html -->
+<!-- templates/homehtml -->
 {% extends 'base.html' %}
+
+{% load static %}
+
+{% block extra_css %} 
+    <link rel="stylesheet" href="{% static 'soilRegenApp/css/home.css' %}">
+{% endblock %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <div id="content-wrap3">
-        {% if user.is_authenticated %}
-            Hi {{ user.username }}!
-            <h2>Track your Fields:</h2>
-            <ul>
-                <li>Go to the Dashboard, and enter your farm, field(s), and soil reports.</li>
-                <li>Generate an expert analysis for each report.</li>
-                <li>Save and track your soil reports, and your report analyses.</li>
-            </ul>
-            <!-- <p><a href="{% url 'logout' %}">Log Out</a></p>
-            <p><a href="{% url 'password_change' %}">Change Password</a></p> -->
-        {% else %}
-            <p>You are logged out</p>
-            <!-- <p><a href="{% url 'login' %}">Log In</a>&emsp;<a href="{% url 'signup' %}">Sign Up</a></p>
-            <p><a href="{% url 'password_reset' %}">Forgot Password?</a></p> -->
-        {% endif %}
+    <div id="content-wrap4">
+        <div class="container">
+            <section>
+                <h2 class="SoilRegen">Soil Health</h2>
+                <br>
+            </section>
 
+            <section>
+                <p class="home-paragraph1">
+                    SoilRegen is a platform that aims to promote regenerative farming practices and improve 
+                    soil health. We allow farmers, gardeners, organic enthusiasts, and anyone interested in 
+                    sustainable agriculture to share and access information, resources, and especially recipes 
+                    that benefit soil and plant health!
+                </p>
+                <p class="home-paragraph1">
+                    You can search recipes without signing up for an account - just click on the "Recipes" tab 
+                    in the navigation bar, or click here: 
+                    <a class="recipe-link" href="{% url 'recipe_list' %}">Recipes</a> and enter a search.</p>
+
+                <p class="home-paragraph1">
+                    If you have recipes for soil amendments that you would like to share, even better! Either 
+                    login, or Sign up for an account, using the Login menu choice above. Once you are logged in, 
+                    you can add your recipes to our database. You can also save your favorite recipes and share
+                    them with others or save them for your own use.</p>
+            </section>
+
+            <section>
+                <h2 class="home-headline2">Soil Health</h2>
+                <br>
+            </section>
+
+            <section>
+                <p class="home-paragraph1">
+                Regenerative farming is a holistic land management practice that focuses on improving 
+                soil health. The goals are to restore the soil's ability to capture water, carbon, and other nutrients, thus improving biodiversity, 
+                enhancing ecosystems, and combating climate change. This approach goes beyond sustainable agriculture by aiming not just to maintain, 
+                but to enhance soil fertility and global biodiversity. </p>
+
+                <p class="home-paragraph1">
+                For more information on regenerative farming click on one of these links: 
+                    <ul>
+                        <li><a href="https://www.ecofarmingdaily.com/the-principles-of-regenerative-agriculture/" target="_self">Ecofarming Daily</a></li>
+                        <li><a href="https://regeneration.org/nexus/regenerative-agriculture" target="_self">Reneration.org</a></li>
+                        <li><a href="https://www.regenerativefarmersofamerica.com/" target="_self">Renerative Farmers of America</a></li>
+                    </ul>
+                </p>
+
+                <p class="home-paragraph1">
+                If you would like to read more about organic farming, click on one of these links:
+                <ul>
+                    <li><a href="https://broadforkfarm.com/do-you-know-the-principles-of-organic-farming/" target="_self">Broadfork Farm</a>.</li>
+                    <li><a href="https://rodaleinstitute.org/why-organic/organic-basics/organic-vs-conventional/" target="_self">Rodale Institute</a></li>
+                </ul>
+                </p>
+
+                <p class="home-paragraph1">
+                    If you would like to read more about nutrient dense farming, click on one of these links: 
+                    <ul>
+                        <li><a href="https://www.nutrientdensityalliance.org/" target="_self">Nutrient Density Alliance</a></li>
+                        <li><a href="https://www.bionutrient.org/bionutrientmeter" target="_self">Bionutrient Food Association</a></li>
+                    </ul>
+                </p>
+            </section>
+
+            <section>
+                <div class="home-paragraph1">
+                    <h3 class="home-headline2">Regenerative Farming</h3>
+                    <p>The principles of regenerative and organic farming include:</p>
+                </div>
+                <ul>
+                    <li><strong>Soil Health Improvement:</strong> Maintaining soil health through practices like cover cropping and crop rotation.</li>
+                    <li><strong>Carbon Sequestration:</strong> Healthy soil creates, absorbs and stores more nutrients.</li>
+                    <li><strong>Biodiversity Enhancement:</strong> Fostering various plant species and supporting wildlife populations.</li>
+                    <li><strong>No-Tillage:</strong> Avoid soil disturbance, which destroys soil structure and reduces beneficial soil microbiology.</li>
+                    <li><strong>Integration of Livestock:</strong> Animals contribute to soil health by cycling nutrients and stimulating plant growth.</li>
+                    <li><strong>Perennial Crops:</strong> Plants that live longer and contribute to soil health by providing continual ground cover.</li>
+                </ul><br>
+                <p class="home-paragraph1">
+                By prioritizing soil health, regenerative farming has the potential to create resilient farms that produce high-quality, nutrient-dense food, 
+                while also playing a crucial role in biodiversity and maintaining a healthy environment.</p>
+            </section>
+
+            <br><br><br><br><br><br><br><br> 
+        </div>
     </div>
     <br><br><br><br>
 {% endblock %}
